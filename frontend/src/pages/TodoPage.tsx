@@ -51,7 +51,7 @@ export function TodoPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!confirm('确定要删除这条 TODO 吗？')) return;
     try {
       await todoApi.delete(id);

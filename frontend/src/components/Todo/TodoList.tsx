@@ -5,7 +5,7 @@ import styles from './Todo.module.css';
 interface TodoListProps {
   todos: Todo[];
   onEdit: (todo: Todo) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: number) => void;
   onToggleStatus: (todo: Todo) => void;
 }
 
