@@ -19,7 +19,7 @@ export function TodoPage() {
       const data = await todoApi.getAll();
       setTodos(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '获取 TODO 失败');
+      setError(err instanceof Error ? err.message : 'Failed to load todos');
     } finally {
       setLoading(false);
     }
@@ -35,7 +35,7 @@ export function TodoPage() {
       setShowForm(false);
       fetchTodos();
     } catch (err) {
-      alert(err instanceof Error ? err.message : '创建失败');
+      alert(err instanceof Error ? err.message : 'Failed to create');
     }
   };
 
@@ -47,17 +47,17 @@ export function TodoPage() {
       setShowForm(false);
       fetchTodos();
     } catch (err) {
-      alert(err instanceof Error ? err.message : '更新失败');
+      alert(err instanceof Error ? err.message : 'Failed to update');
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('确定要删除这条 TODO 吗？')) return;
+    if (!confirm('Delete this task?')) return;
     try {
       await todoApi.delete(id);
       fetchTodos();
     } catch (err) {
-      alert(err instanceof Error ? err.message : '删除失败');
+      alert(err instanceof Error ? err.message : 'Failed to delete');
     }
   };
 
@@ -67,7 +67,7 @@ export function TodoPage() {
       await todoApi.update(todo.id, { status: newStatus });
       fetchTodos();
     } catch (err) {
-      alert(err instanceof Error ? err.message : '更新状态失败');
+      alert(err instanceof Error ? err.message : 'Failed to update');
     }
   };
 
@@ -100,7 +100,7 @@ export function TodoPage() {
         <div className={styles.headerLeft}>
           <h1 className={styles.title}>TODO</h1>
           <p className={styles.subtitle}>
-            {loading ? '加载中...' : `${todos.length} 个任务`}
+            {loading ? 'Loading...' : `${todos.length} ${todos.length === 1 ? 'Task' : 'Tasks'}`}
           </p>
         </div>
         {!showForm && (
@@ -109,7 +109,7 @@ export function TodoPage() {
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            <span>新建任务</span>
+            <span>New Task</span>
           </button>
         )}
       </div>
@@ -123,29 +123,15 @@ export function TodoPage() {
       )}
 
       {loading && (
-        <div className={styles.loading}>
-          <div className={styles.loadingSpinner} />
-          <p>加载中...</p>
-        </div>
+        <div className={styles.loading}>Loading...</div>
       )}
 
       {error && (
-        <div className={styles.error}>
-          {error}
-        </div>
+        <div className={styles.error}>{error}</div>
       )}
 
       {!loading && !error && todos.length === 0 && (
-        <div className={styles.empty}>
-          <div className={styles.emptyIcon}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M9 11l3 3L22 4" />
-              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-            </svg>
-          </div>
-          <p className={styles.emptyText}>暂无任务</p>
-          <p className={styles.emptyHint}>点击上方按钮创建第一个任务</p>
-        </div>
+        <div className={styles.empty}>No tasks yet</div>
       )}
 
       {!loading && !error && todos.length > 0 && (

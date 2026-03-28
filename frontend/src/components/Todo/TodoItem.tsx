@@ -26,57 +26,48 @@ export function TodoItem({ todo, onEdit, onDelete, onToggleStatus }: TodoItemPro
       : styles.badgeStatusPending;
 
   const statusLabels = {
-    pending: '待处理',
-    in_progress: '进行中',
-    done: '已完成',
+    pending: 'Pending',
+    in_progress: 'In Progress',
+    done: 'Done',
   };
 
   const priorityLabels = {
-    low: '低',
-    medium: '中',
-    high: '高',
+    low: 'Low',
+    medium: 'Medium',
+    high: 'High',
   };
 
   return (
     <div className={styles.item}>
-      <div className={styles.checkboxWrapper}>
-        <input
-          type="checkbox"
-          className={styles.checkbox}
-          checked={isDone}
-          onChange={() => onToggleStatus(todo)}
-        />
-      </div>
+      <input
+        type="checkbox"
+        className={styles.checkbox}
+        checked={isDone}
+        onChange={() => onToggleStatus(todo)}
+      />
       <div className={styles.content}>
-        <div className={styles.itemHeader}>
-          <span className={`${styles.itemTitle} ${isDone ? styles.itemTitleDone : ''}`}>
-            {todo.title}
-          </span>
-        </div>
-        {todo.description && (
-          <p className={styles.description}>{todo.description}</p>
-        )}
-        <div className={styles.meta}>
-          <span className={`${styles.badge} ${styles.badgePriority} ${priorityClass}`}>
-            优先级: {priorityLabels[todo.priority]}
-          </span>
-          <span className={`${styles.badge} ${styles.badgeStatus} ${statusClass}`}>
-            {statusLabels[todo.status]}
-          </span>
-        </div>
+        <span className={`${styles.itemTitle} ${isDone ? styles.itemTitleDone : ''}`}>
+          {todo.title}
+        </span>
+        <span className={`${styles.badge} ${statusClass}`}>
+          {statusLabels[todo.status]}
+        </span>
+        <span className={`${styles.badge} ${priorityClass}`}>
+          {priorityLabels[todo.priority]}
+        </span>
       </div>
       <div className={styles.actions}>
         <button
-          className={`${styles.actionButton} ${styles.editButton}`}
+          className={styles.actionButton}
           onClick={() => onEdit(todo)}
         >
-          编辑
+          Edit
         </button>
         <button
-          className={`${styles.actionButton} ${styles.deleteButton}`}
+          className={styles.actionButton}
           onClick={() => onDelete(todo.id)}
         >
-          删除
+          Delete
         </button>
       </div>
     </div>

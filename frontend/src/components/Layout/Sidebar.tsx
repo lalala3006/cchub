@@ -5,6 +5,7 @@ interface NavItem {
   path: string;
   label: string;
   icon: React.ReactNode;
+  comingSoon?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -20,13 +21,14 @@ const navItems: NavItem[] = [
   },
   {
     path: '/accounting',
-    label: '记账',
+    label: 'Accounting',
     icon: (
       <svg className={styles.navIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="12" y1="1" x2="12" y2="23" />
         <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
       </svg>
     ),
+    comingSoon: true,
   },
   {
     path: '/skills',
@@ -36,6 +38,7 @@ const navItems: NavItem[] = [
         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
       </svg>
     ),
+    comingSoon: true,
   },
 ];
 
@@ -50,30 +53,33 @@ export function Sidebar() {
       </div>
 
       <nav className={styles.nav}>
-        <div className={styles.navLabel}>工具</div>
-        <ul className={styles.navList}>
-          {navItems.map((item) => (
-            <li key={item.path} className={styles.navItem}>
-              <NavLink
-                to={item.path}
-                className={({ isActive }) =>
-                  `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`
-                }
-              >
-                {item.icon}
-                {item.label}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      <div className={styles.sidebarFooter}>
-        <div className={styles.sidebarMeta}>
-          个人工具管理平台<br />
-          v1.0.0
+        <div className={styles.navSection}>
+          <div className={styles.navLabel}>Tools</div>
+          <ul className={styles.navList}>
+            {navItems.map((item) => (
+              <li key={item.path} className={styles.navItem}>
+                {item.comingSoon ? (
+                  <span className={`${styles.navLink} ${styles.navLinkDisabled}`}>
+                    {item.icon}
+                    {item.label}
+                    <span className={styles.navBadge}>Soon</span>
+                  </span>
+                ) : (
+                  <NavLink
+                    to={item.path}
+                    className={({ isActive }) =>
+                      `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`
+                    }
+                  >
+                    {item.icon}
+                    {item.label}
+                  </NavLink>
+                )}
+              </li>
+            ))}
+          </ul>
         </div>
-      </div>
+      </nav>
     </aside>
   );
 }

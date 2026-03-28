@@ -2,7 +2,6 @@
 .layout {
   display: flex;
   min-height: 100vh;
-  background: var(--color-bg-primary);
 }
 
 /* ===== Sidebar ===== */
@@ -20,23 +19,25 @@
   z-index: 100;
 }
 
-.sidebar::before {
+/* Gold accent line */
+.sidebar::after {
   content: '';
   position: absolute;
-  top: 0;
+  top: 60px;
   right: 0;
+  bottom: 60px;
   width: 1px;
-  height: 100%;
   background: linear-gradient(
     180deg,
     transparent 0%,
-    rgba(201, 162, 39, 0.3) 20%,
-    rgba(201, 162, 39, 0.3) 80%,
+    var(--color-accent) 15%,
+    var(--color-accent) 85%,
     transparent 100%
   );
+  opacity: 0.4;
 }
 
-/* Logo Area */
+/* ===== Logo ===== */
 .sidebarHeader {
   padding: 0 var(--space-lg);
   margin-bottom: var(--space-2xl);
@@ -49,40 +50,43 @@
 }
 
 .logoIcon {
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, var(--color-accent) 0%, #f4d03f 100%);
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--color-accent) 0%, #e8c547 100%);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--color-bg-sidebar);
-  box-shadow: var(--shadow-glow);
 }
 
 .logoText {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 500;
   color: var(--color-text-inverse);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
 }
 
-/* Navigation */
+/* ===== Navigation ===== */
 .nav {
   flex: 1;
   padding: 0 var(--space-md);
+}
+
+.navSection {
+  margin-bottom: var(--space-lg);
 }
 
 .navLabel {
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--color-text-tertiary);
+  letter-spacing: 0.08em;
+  color: #555;
   padding: 0 var(--space-md);
   margin-bottom: var(--space-sm);
 }
@@ -91,107 +95,89 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: 2px;
 }
 
 .navItem {
-  animation: slideInLeft 0.4s ease backwards;
+  animation: slideInLeft 0.3s ease backwards;
 }
 
 .navItem:nth-child(1) { animation-delay: 0.05s; }
 .navItem:nth-child(2) { animation-delay: 0.1s; }
 .navItem:nth-child(3) { animation-delay: 0.15s; }
-.navItem:nth-child(4) { animation-delay: 0.2s; }
 
 .navLink {
   display: flex;
   align-items: center;
   gap: var(--space-md);
-  padding: var(--space-md) var(--space-md);
-  color: rgba(255, 255, 255, 0.6);
+  padding: 10px var(--space-md);
+  color: rgba(255, 255, 255, 0.5);
   text-decoration: none;
-  border-radius: 10px;
-  font-size: 14px;
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: 500;
-  transition: all var(--transition-base);
+  transition: all var(--transition-fast);
   position: relative;
-  overflow: hidden;
-}
-
-.navLink::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 0;
-  background: var(--color-accent);
-  border-radius: 0 2px 2px 0;
-  transition: height var(--transition-base);
 }
 
 .navLink:hover {
-  color: rgba(255, 255, 255, 0.9);
-  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .navLinkActive {
   color: var(--color-text-inverse);
-  background: rgba(201, 162, 39, 0.15);
+  background: rgba(255, 255, 255, 0.1);
 }
 
+/* Active indicator dots */
 .navLinkActive::before {
-  height: 24px;
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 4px;
+  background: var(--color-accent);
+  border-radius: 50%;
+}
+
+/* Disabled nav items */
+.navLinkDisabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.navLinkDisabled:hover {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .navIcon {
-  width: 20px;
-  height: 20px;
-  opacity: 0.8;
-  transition: opacity var(--transition-fast);
+  width: 18px;
+  height: 18px;
+  opacity: 0.7;
 }
 
-.navLink:hover .navIcon,
-.navLinkActive .navIcon {
+.navLinkActive .navIcon,
+.navLink:hover .navIcon {
   opacity: 1;
 }
 
-/* Sidebar Footer */
-.sidebarFooter {
-  padding: var(--space-lg);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  margin-top: auto;
-}
-
-.sidebarMeta {
-  font-size: 11px;
-  color: var(--color-text-tertiary);
-  line-height: 1.6;
+.navBadge {
+  margin-left: auto;
+  font-size: 10px;
+  color: #666;
+  font-weight: 500;
 }
 
 /* ===== Main Content ===== */
 .mainContent {
   flex: 1;
   margin-left: var(--sidebar-width);
-  padding: var(--space-2xl) var(--space-3xl);
+  padding: var(--space-xl) var(--space-2xl);
+  background: var(--color-bg-primary);
   min-height: 100vh;
-  animation: fadeIn 0.5s ease;
-}
-
-/* Decorative background pattern */
-.mainContent::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 50%;
-  height: 50%;
-  background: radial-gradient(
-    ellipse at top right,
-    rgba(201, 162, 39, 0.03) 0%,
-    transparent 60%
-  );
-  pointer-events: none;
-  z-index: -1;
+  animation: fadeIn 0.4s ease;
 }
