@@ -97,16 +97,22 @@ export function TodoPage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>TODO 列表</h1>
+        <div className={styles.headerLeft}>
+          <h1 className={styles.title}>TODO</h1>
+          <p className={styles.subtitle}>
+            {loading ? '加载中...' : `${todos.length} 个任务`}
+          </p>
+        </div>
         {!showForm && (
           <button className={styles.addButton} onClick={handleAddClick}>
-            + 新建 TODO
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            <span>新建任务</span>
           </button>
         )}
       </div>
-
-      {loading && <div className={styles.loading}>加载中...</div>}
-      {error && <div className={styles.error}>{error}</div>}
 
       {showForm && (
         <TodoForm
@@ -116,7 +122,33 @@ export function TodoPage() {
         />
       )}
 
-      {!loading && !error && (
+      {loading && (
+        <div className={styles.loading}>
+          <div className={styles.loadingSpinner} />
+          <p>加载中...</p>
+        </div>
+      )}
+
+      {error && (
+        <div className={styles.error}>
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && todos.length === 0 && (
+        <div className={styles.empty}>
+          <div className={styles.emptyIcon}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M9 11l3 3L22 4" />
+              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+            </svg>
+          </div>
+          <p className={styles.emptyText}>暂无任务</p>
+          <p className={styles.emptyHint}>点击上方按钮创建第一个任务</p>
+        </div>
+      )}
+
+      {!loading && !error && todos.length > 0 && (
         <TodoList
           todos={todos}
           onEdit={handleEdit}

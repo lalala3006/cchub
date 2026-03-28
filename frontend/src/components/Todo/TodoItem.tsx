@@ -13,17 +13,17 @@ export function TodoItem({ todo, onEdit, onDelete, onToggleStatus }: TodoItemPro
 
   const priorityClass =
     todo.priority === 'high'
-      ? styles.badgeHigh
+      ? styles.badgePriorityHigh
       : todo.priority === 'medium'
-      ? styles.badgeMedium
-      : styles.badgeLow;
+      ? styles.badgePriorityMedium
+      : styles.badgePriorityLow;
 
   const statusClass =
     todo.status === 'done'
-      ? styles.badgeDone
+      ? styles.badgeStatusDone
       : todo.status === 'in_progress'
-      ? styles.badgeInProgress
-      : styles.badgePending;
+      ? styles.badgeStatusProgress
+      : styles.badgeStatusPending;
 
   const statusLabels = {
     pending: '待处理',
@@ -39,12 +39,14 @@ export function TodoItem({ todo, onEdit, onDelete, onToggleStatus }: TodoItemPro
 
   return (
     <div className={styles.item}>
-      <input
-        type="checkbox"
-        className={styles.checkbox}
-        checked={isDone}
-        onChange={() => onToggleStatus(todo)}
-      />
+      <div className={styles.checkboxWrapper}>
+        <input
+          type="checkbox"
+          className={styles.checkbox}
+          checked={isDone}
+          onChange={() => onToggleStatus(todo)}
+        />
+      </div>
       <div className={styles.content}>
         <div className={styles.itemHeader}>
           <span className={`${styles.itemTitle} ${isDone ? styles.itemTitleDone : ''}`}>
@@ -55,10 +57,10 @@ export function TodoItem({ todo, onEdit, onDelete, onToggleStatus }: TodoItemPro
           <p className={styles.description}>{todo.description}</p>
         )}
         <div className={styles.meta}>
-          <span className={`${styles.badge} ${priorityClass}`}>
-            {priorityLabels[todo.priority]}
+          <span className={`${styles.badge} ${styles.badgePriority} ${priorityClass}`}>
+            优先级: {priorityLabels[todo.priority]}
           </span>
-          <span className={`${styles.badge} ${statusClass}`}>
+          <span className={`${styles.badge} ${styles.badgeStatus} ${statusClass}`}>
             {statusLabels[todo.status]}
           </span>
         </div>
