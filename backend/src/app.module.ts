@@ -7,7 +7,7 @@ import { Todo } from './todo/todo.entity';
   imports: [
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',
-      database: '/Users/lalala/Desktop/ccHub/backend/database.sqlite',
+      database: process.env.DATABASE_PATH || './database.sqlite',
       entities: [Todo],
       synchronize: true,
     }),
