@@ -357,19 +357,65 @@ environment:
 
 ---
 
-## 五、部署
+## 五、本地开发
 
-### 5.1 开发环境
+### 5.1 环境要求
+
+- **Node.js** >= 18.x
+- **npm** >= 9.x
+- **Git**
+
+### 5.2 克隆项目
 
 ```bash
-# 前端
-cd frontend && npm install && npm run dev
-
-# 后端
-cd backend && npm install && npm run start:dev
+git clone https://github.com/lalala3006/cchub.git
+cd cchub
 ```
 
-### 5.2 Docker 部署
+### 5.3 启动后端
+
+```bash
+# 进入后端目录
+cd backend
+
+# 安装依赖
+npm install
+
+# 启动开发服务器 (热重载)
+npm run start:dev
+
+# 后端启动后运行在 http://localhost:4000
+# API 地址: http://localhost:4000/api/v1
+```
+
+### 5.4 启动前端
+
+新开一个终端窗口：
+
+```bash
+# 进入前端目录
+cd frontend
+
+# 安装依赖
+npm install
+
+# 启动开发服务器 (热重载)
+npm run dev
+
+# 前端启动后运行在 http://localhost:5173 (或 5174 如果端口被占用)
+```
+
+### 5.5 访问应用
+
+打开浏览器访问 http://localhost:5173（或终端显示的端口）
+
+### 5.6 数据库
+
+SQLite 数据库文件位于 `backend/database.sqlite`，无需额外配置。
+
+---
+
+## 六、Docker 部署
 
 ```bash
 # 构建并启动
@@ -385,7 +431,7 @@ docker-compose logs -f
 docker-compose down
 ```
 
-### 5.3 阿里云 ECS 部署步骤
+### 6.2 阿里云 ECS 部署步骤
 
 1. 在 ECS 上安装 Docker 和 docker-compose
 2. 克隆代码或通过 scp 传输
@@ -394,7 +440,7 @@ docker-compose down
 
 ---
 
-## 六、API 文档
+## 七、API 文档
 
 ### 创建 TODO
 
