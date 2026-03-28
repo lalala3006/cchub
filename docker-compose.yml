@@ -18,5 +18,3 @@ services:
       - "4000:4000"
     environment:
       - DATABASE_PATH=/app/database.sqlite
-    volumes:
-      - /app/database.sqlite
