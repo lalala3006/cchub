@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, Form, Input, Slider, Button, List, Space, message } from 'antd';
-import { githubToolsApi, FocusConfig } from '../../api/githubToolsApi';
+import { githubToolsApi } from '../../api/githubToolsApi';
+import type { FocusConfig } from '../../api/githubToolsApi';
 import styles from './ConfigModal.module.css';
 
 interface ConfigModalProps {

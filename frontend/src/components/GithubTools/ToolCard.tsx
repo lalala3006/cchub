@@ -1,5 +1,5 @@
 import { Card, Button, Tag, Space } from 'antd';
-import { GithubTool, CollectionRecord, CollectionStatus } from '../../api/githubToolsApi';
+import type { GithubTool, CollectionRecord, CollectionStatus } from '../../api/githubToolsApi';
 import styles from './ToolCard.module.css';
 
 interface ToolCardProps {

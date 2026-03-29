@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Tabs, Input, Spin, message, Empty } from 'antd';
-import { GithubTool, CollectionRecord, CollectionStatus, githubToolsApi } from '../api/githubToolsApi';
+import type { GithubTool, CollectionRecord, CollectionStatus } from '../api/githubToolsApi';
+import { githubToolsApi } from '../api/githubToolsApi';
 import { ToolCard } from '../components/GithubTools/ToolCard';
 import styles from '../components/GithubTools/GithubToolsPage.module.css';
 

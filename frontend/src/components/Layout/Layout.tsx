@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Button } from 'antd';
-import { GithubOutlined, SettingOutlined } from '@ant-design/icons';
+import { SettingOutlined } from '@ant-design/icons';
 import { Sidebar } from './Sidebar';
 import { ConfigModal } from '../GithubTools/ConfigModal';
 import styles from './Layout.module.css';
