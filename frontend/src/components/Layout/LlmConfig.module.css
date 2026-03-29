@@ -1,0 +1,28 @@
+.llmConfig {
+  background: #f5f5f5;
+  border-top: 1px solid #ddd;
+  padding: 8px 16px;
+}
+
+.header {
+  cursor: pointer;
+  font-size: 12px;
+  color: #666;
+  user-select: none;
+}
+
+.form {
+  margin-top: 12px;
+}
+
+.form :global(.ant-form-item) {
+  margin-bottom: 8px;
+}
+
+.form :global(.ant-form-item-label) {
+  line-height: 1.2;
+}
+
+.form :global(.ant-form-item-label > label) {
+  font-size: 12px;
+}

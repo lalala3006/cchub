@@ -7,11 +7,13 @@ import { GithubFetcherService } from './github-fetcher.service';
 import { GithubTool } from './entities/github-tool.entity';
 import { CollectionRecord } from './entities/collection-record.entity';
 import { FocusConfig } from './entities/focus-config.entity';
+import { LlmModule } from '../llm/llm.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([GithubTool, CollectionRecord, FocusConfig]),
     ScheduleModule.forRoot(),
+    LlmModule,
   ],
   controllers: [GithubToolController],
   providers: [GithubToolService, GithubFetcherService],

@@ -20,6 +20,6 @@
     "noFallthroughCasesInSwitch": false,
     "esModuleInterop": true,
     "ignoreDeprecations": "6.0",
-    "types": ["node"]
+    "types": ["node", "jest"]
   }
 }

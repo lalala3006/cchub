@@ -117,7 +117,19 @@
   gap: var(--space-md);
 }
 
+.feedHeader {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-md);
+}
+
 /* ===== Tool Card ===== */
+.cardLink {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
 .card {
   background: var(--color-bg-card);
   border-radius: 12px;
@@ -165,6 +177,20 @@
 
 .cardTitle:hover {
   color: var(--color-accent);
+}
+
+.cardTitleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
 .cardTitle svg {

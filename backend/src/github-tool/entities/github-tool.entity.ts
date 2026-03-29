@@ -24,6 +24,12 @@ export class GithubTool {
   @Column({ nullable: true })
   language: string;
 
+  @Column({ nullable: true, length: 500 })
+  avatarUrl: string;
+
+  @Column({ nullable: true, type: 'text' })
+  descriptionCn: string;
+
   @Column({ type: 'datetime' })
   fetchedAt: Date;
 

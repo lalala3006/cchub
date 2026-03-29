@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Spin, message } from 'antd';
+import { Spin, message, Button } from 'antd';
+import { ReloadOutlined } from '@ant-design/icons';
 import type { GithubTool, CollectionRecord, CollectionStatus } from '../api/githubToolsApi';
 import { githubToolsApi } from '../api/githubToolsApi';
 import { ToolCard } from '../components/GithubTools/ToolCard';
@@ -17,6 +18,7 @@ export function GithubToolsPage() {
   const [collection, setCollection] = useState<CollectionRecord[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(false);
 
   useEffect(() => {
     loadFeed();
@@ -81,6 +83,18 @@ export function GithubToolsPage() {
     }
   };
 
+  const handleManualFetch = async () => {
+    setFetching(true);
+    try {
+      await githubToolsApi.triggerFetch();
+      message.success('已触发抓取，请稍后刷新查看新项目');
+    } catch {
+      message.error('触发抓取失败');
+    } finally {
+      setFetching(false);
+    }
+  };
+
   const showCollection = activeTab === 'practiced' || activeTab === 'deep_use';
 
   return (
@@ -120,6 +134,17 @@ export function GithubToolsPage() {
 
       <Spin spinning={loading}>
         <div className={styles.list}>
+          {activeTab === 'unread' && (
+            <div className={styles.feedHeader}>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={handleManualFetch}
+                loading={fetching}
+              >
+                刷新项目
+              </Button>
+            </div>
+          )}
           {activeTab === 'unread' && feed.map((tool) => (
             <ToolCard
               key={tool.id}

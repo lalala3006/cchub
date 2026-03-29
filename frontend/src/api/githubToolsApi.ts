@@ -1,5 +1,16 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 
+export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
+  const token = localStorage.getItem('token');
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+};
+
 export type CollectionStatus = 'unread' | 'practiced' | 'deep_use' | 'no_longer_used';
 
 export interface GithubTool {
@@ -8,8 +19,10 @@ export interface GithubTool {
   fullName: string;
   url: string;
   description: string;
+  descriptionCn?: string;
   stars: number;
   language: string;
+  avatarUrl?: string;
   fetchedAt: string;
   createdAt: string;
 }
@@ -35,6 +48,7 @@ export const githubToolsApi = {
   // 获取本周推荐
   async getFeed(): Promise<GithubTool[]> {
     const res = await fetch(`${API_BASE_URL}/github-tools/feed`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
 
@@ -44,18 +58,21 @@ export const githubToolsApi = {
     if (status) params.set('status', status);
     if (search) params.set('search', search);
     const res = await fetch(`${API_BASE_URL}/github-tools/collection?${params}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
 
   // 保留
   async keepTool(toolId: number): Promise<CollectionRecord> {
     const res = await fetch(`${API_BASE_URL}/github-tools/collection/${toolId}/keep`, { method: 'POST' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
 
   // 隐藏
   async hideTool(toolId: number): Promise<void> {
-    await fetch(`${API_BASE_URL}/github-tools/collection/${toolId}/hide`, { method: 'POST' });
+    const res = await fetch(`${API_BASE_URL}/github-tools/collection/${toolId}/hide`, { method: 'POST' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
   },
 
   // 更新状态
@@ -65,12 +82,14 @@ export const githubToolsApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
     });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
 
   // 配置
   async getConfig(): Promise<FocusConfig[]> {
     const res = await fetch(`${API_BASE_URL}/github-tools/config`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
 
@@ -80,11 +99,13 @@ export const githubToolsApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ keyword, weight }),
     });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
 
   async deleteConfig(id: number): Promise<void> {
-    await fetch(`${API_BASE_URL}/github-tools/config/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE_URL}/github-tools/config/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
   },
 
   async updateConfig(id: number, weight: number): Promise<FocusConfig> {
@@ -93,11 +114,13 @@ export const githubToolsApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ weight }),
     });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
 
   // 触发抓取
   async triggerFetch(): Promise<void> {
-    await fetch(`${API_BASE_URL}/github-tools/fetch`, { method: 'POST' });
+    const res = await fetch(`${API_BASE_URL}/github-tools/fetch`, { method: 'POST' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
   },
 };

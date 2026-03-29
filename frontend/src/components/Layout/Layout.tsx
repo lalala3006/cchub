@@ -4,6 +4,7 @@ import { Button } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
 import { Sidebar } from './Sidebar';
 import { ConfigModal } from '../GithubTools/ConfigModal';
+import { LlmConfig } from './LlmConfig';
 import styles from './Layout.module.css';
 
 export function Layout() {
@@ -27,6 +28,9 @@ export function Layout() {
         )}
         <Outlet />
       </main>
+      <footer className={styles.footer}>
+        <LlmConfig />
+      </footer>
       <ConfigModal open={configModalOpen} onClose={() => setConfigModalOpen(false)} />
     </div>
   );

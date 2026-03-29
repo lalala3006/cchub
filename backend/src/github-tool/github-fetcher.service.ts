@@ -97,9 +97,54 @@ export class GithubFetcherService {
     return tool;
   }
 
+  private async fetchFavicon(owner: string, repo: string): Promise<string> {
+    try {
+      const url = `https://github.com/${owner}/${repo}`;
+      const response = await fetch(url);
+      const html = await response.text();
+
+      // 匹配 <link rel="icon" href="..."> 或 <link rel="shortcut icon" href="...">
+      const match = html.match(/<link\s+(?:rel="(?:icon|shortcut icon)"\s+)?href="([^"]+)"/i);
+      if (match) {
+        let favicon = match[1];
+        if (favicon.startsWith('/')) {
+          favicon = 'https://github.com' + favicon;
+        }
+        // 验证 URL 安全性
+        if (this.isValidFaviconUrl(favicon)) {
+          return favicon;
+        }
+      }
+    } catch (error) {
+      this.logger.warn(`Failed to fetch favicon for ${owner}/${repo}:`, error);
+    }
+    // 默认返回 GitHub favicon
+    return 'https://github.com/favicon.ico';
+  }
+
+  private isValidFaviconUrl(url: string): boolean {
+    try {
+      const parsed = new URL(url);
+      const validHosts = ['github.com', 'githubusercontent.com'];
+      if (!validHosts.includes(parsed.hostname)) {
+        return false;
+      }
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        return false;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   private async saveTool(tool: GithubTool): Promise<void> {
     const existing = await this.toolRepo.findOne({ where: { fullName: tool.fullName } });
     if (existing) return;
+
+    // 抓取 favicon
+    const parts = tool.fullName.split('/');
+    tool.avatarUrl = await this.fetchFavicon(parts[0], parts[1]);
 
     const saved = await this.toolRepo.save(tool);
 
