@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Modal, Form, Input, Slider, Button, List, Space, message } from 'antd';
+import { Modal, message } from 'antd';
 import { githubToolsApi } from '../../api/githubToolsApi';
 import type { FocusConfig } from '../../api/githubToolsApi';
 import styles from './ConfigModal.module.css';
@@ -12,7 +12,8 @@ interface ConfigModalProps {
 export function ConfigModal({ open, onClose }: ConfigModalProps) {
   const [configs, setConfigs] = useState<FocusConfig[]>([]);
   const [loading, setLoading] = useState(false);
-  const [form] = Form.useForm();
+  const [keyword, setKeyword] = useState('');
+  const [weight, setWeight] = useState(5);
 
   useEffect(() => {
     if (open) {
@@ -32,11 +33,13 @@ export function ConfigModal({ open, onClose }: ConfigModalProps) {
     }
   };
 
-  const handleAdd = async (values: { keyword: string; weight: number }) => {
+  const handleAdd = async () => {
+    if (!keyword.trim()) return;
     try {
-      await githubToolsApi.createConfig(values.keyword, values.weight);
+      await githubToolsApi.createConfig(keyword.trim(), weight);
       message.success('添加成功');
-      form.resetFields();
+      setKeyword('');
+      setWeight(5);
       loadConfigs();
     } catch {
       message.error('添加失败');
@@ -53,9 +56,9 @@ export function ConfigModal({ open, onClose }: ConfigModalProps) {
     }
   };
 
-  const handleUpdateWeight = async (id: number, weight: number) => {
+  const handleUpdateWeight = async (id: number, w: number) => {
     try {
-      await githubToolsApi.updateConfig(id, weight);
+      await githubToolsApi.updateConfig(id, w);
       loadConfigs();
     } catch {
       message.error('更新失败');
@@ -63,52 +66,74 @@ export function ConfigModal({ open, onClose }: ConfigModalProps) {
   };
 
   return (
-    <Modal title="GitHub 工具收藏配置" open={open} onCancel={onClose} footer={null} width={600}>
-      <Form form={form} layout="inline" onFinish={handleAdd} className={styles.form}>
-        <Form.Item name="keyword" rules={[{ required: true, message: '请输入关键词' }]}>
-          <Input placeholder="关注领域关键词" style={{ width: 200 }} />
-        </Form.Item>
-        <Form.Item name="weight" initialValue={5} rules={[{ required: true }]}>
-          <Slider min={1} max={10} style={{ width: 120 }} tooltip={{ formatter: (v) => `权重: ${v}` }} />
-        </Form.Item>
-        <Form.Item>
-          <Button type="primary" htmlType="submit">
-            添加
-          </Button>
-        </Form.Item>
-      </Form>
+    <Modal
+      title="关注领域配置"
+      open={open}
+      onCancel={onClose}
+      footer={null}
+      width={520}
+      className={styles.modal}
+    >
+      <div className={styles.form}>
+        <input
+          type="text"
+          className={styles.input}
+          placeholder="输入关键词，如: AI, low-code, cli-tool"
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+        />
+        <div className={styles.weightRow}>
+          <span className={styles.weightLabel}>权重</span>
+          <input
+            type="range"
+            min="1"
+            max="10"
+            value={weight}
+            onChange={(e) => setWeight(Number(e.target.value))}
+            className={styles.slider}
+          />
+          <span className={styles.weightValue}>{weight}</span>
+        </div>
+        <button className={styles.addBtn} onClick={handleAdd}>
+          添加
+        </button>
+      </div>
 
-      <List
-        className={styles.list}
-        loading={loading}
-        dataSource={configs}
-        renderItem={(item) => (
-          <List.Item
-            actions={[
-              <Button type="link" danger onClick={() => handleDelete(item.id)}>
-                删除
-              </Button>,
-            ]}
-          >
-            <List.Item.Meta
-              title={item.keyword}
-              description={
-                <Space>
-                  <span>权重:</span>
-                  <Slider
-                    min={1}
-                    max={10}
+      <div className={styles.divider} />
+
+      <div className={styles.list}>
+        {loading ? (
+          <div className={styles.loading}>加载中...</div>
+        ) : configs.length === 0 ? (
+          <div className={styles.empty}>暂无配置，点击上方添加</div>
+        ) : (
+          configs.map((item) => (
+            <div key={item.id} className={styles.item}>
+              <div className={styles.itemInfo}>
+                <span className={styles.itemKeyword}>{item.keyword}</span>
+                <div className={styles.itemWeight}>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
                     value={item.weight}
-                    style={{ width: 100 }}
-                    onChange={(v) => handleUpdateWeight(item.id, v)}
-                    tooltip={{ formatter: (v) => `${v}` }}
+                    onChange={(e) => handleUpdateWeight(item.id, Number(e.target.value))}
+                    className={styles.sliderSmall}
                   />
-                </Space>
-              }
-            />
-          </List.Item>
+                  <span className={styles.weightValue}>{item.weight}</span>
+                </div>
+              </div>
+              <button
+                className={styles.deleteBtn}
+                onClick={() => handleDelete(item.id)}
+              >
+                删除
+              </button>
+            </div>
+          ))
         )}
-      />
+      </div>
     </Modal>
   );
 }

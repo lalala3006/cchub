@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Tabs, Input, Spin, message, Empty } from 'antd';
+import { Spin, message } from 'antd';
 import type { GithubTool, CollectionRecord, CollectionStatus } from '../api/githubToolsApi';
 import { githubToolsApi } from '../api/githubToolsApi';
 import { ToolCard } from '../components/GithubTools/ToolCard';
 import styles from '../components/GithubTools/GithubToolsPage.module.css';
 
-const { Search } = Input;
+const TABS: { key: CollectionStatus; label: string }[] = [
+  { key: 'unread', label: '未读' },
+  { key: 'practiced', label: '已实践' },
+  { key: 'deep_use', label: '深度使用' },
+];
 
 export function GithubToolsPage() {
   const [activeTab, setActiveTab] = useState<CollectionStatus>('unread');
@@ -77,23 +81,42 @@ export function GithubToolsPage() {
     }
   };
 
+  const showCollection = activeTab === 'practiced' || activeTab === 'deep_use';
+
   return (
     <div className={styles.page}>
-      <Tabs
-        activeKey={activeTab}
-        onChange={(key) => setActiveTab(key as CollectionStatus)}
-        items={[
-          { key: 'unread', label: '未读', children: (
-            <Search placeholder="搜索项目名或描述" onSearch={setSearch} enterButton allowClear />
-          )},
-          { key: 'practiced', label: '已实践', children: (
-            <Search placeholder="搜索项目名或描述" onSearch={setSearch} enterButton allowClear />
-          )},
-          { key: 'deep_use', label: '深度使用', children: (
-            <Search placeholder="搜索项目名或描述" onSearch={setSearch} enterButton allowClear />
-          )},
-        ]}
-      />
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <h1 className={styles.title}>GitHub 工具</h1>
+          <p className={styles.subtitle}>发现和追踪有价值的开源项目</p>
+        </div>
+      </div>
+
+      <div className={styles.tabs}>
+        <div className={styles.tabList}>
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              className={`${styles.tab} ${activeTab === tab.key ? styles.active : ''}`}
+              onClick={() => setActiveTab(tab.key)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {showCollection && (
+        <div className={styles.searchWrapper}>
+          <input
+            type="text"
+            className={styles.search}
+            placeholder="搜索项目名或描述..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      )}
 
       <Spin spinning={loading}>
         <div className={styles.list}>
@@ -106,7 +129,7 @@ export function GithubToolsPage() {
               onHide={handleHide}
             />
           ))}
-          {(activeTab === 'practiced' || activeTab === 'deep_use') && collection.map((record) => (
+          {showCollection && collection.map((record) => (
             <ToolCard
               key={record.id}
               tool={record}
@@ -114,8 +137,13 @@ export function GithubToolsPage() {
               onStatusChange={handleStatusChange}
             />
           ))}
-          {((activeTab === 'practiced' || activeTab === 'deep_use') && collection.length === 0) && (
-            <Empty description="暂无数据" />
+          {showCollection && collection.length === 0 && (
+            <div className={styles.empty}>
+              <svg className={styles.emptyIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
+              <p>暂无数据</p>
+            </div>
           )}
         </div>
       </Spin>
