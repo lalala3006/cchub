@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { GithubOutlined } from '@ant-design/icons';
 import styles from './Layout.module.css';
 
 interface NavItem {
@@ -18,6 +19,11 @@ const navItems: NavItem[] = [
         <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
       </svg>
     ),
+  },
+  {
+    path: '/github-tools',
+    label: 'GitHub 工具',
+    icon: <GithubOutlined />,
   },
   {
     path: '/accounting',

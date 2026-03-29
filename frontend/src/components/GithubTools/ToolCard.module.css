@@ -1,0 +1,30 @@
+.card {
+  margin-bottom: 16px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1890ff;
+}
+
+.title:hover {
+  text-decoration: underline;
+}
+
+.description {
+  color: #666;
+  margin-bottom: 12px;
+  min-height: 40px;
+}
+
+.actions {
+  margin-top: 8px;
+}

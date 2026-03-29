@@ -1,0 +1,10 @@
+.form {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.list {
+  max-height: 400px;
+  overflow-y: auto;
+}

@@ -1,0 +1,12 @@
+.page {
+  padding: 24px;
+}
+
+.configBtn {
+  margin-bottom: 16px;
+  text-align: right;
+}
+
+.list {
+  min-height: 200px;
+}
