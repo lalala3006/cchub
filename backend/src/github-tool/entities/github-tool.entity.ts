@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
+import { CollectionRecord } from './collection-record.entity';
 
 @Entity()
 export class GithubTool {
@@ -28,4 +29,7 @@ export class GithubTool {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @OneToMany(() => CollectionRecord, (record) => record.tool)
+  collectionRecord: CollectionRecord[];
 }
