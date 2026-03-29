@@ -21,6 +21,9 @@ describe('GithubToolController', () => {
     language: 'TypeScript',
     fetchedAt: new Date(),
     createdAt: new Date(),
+    avatarUrl: 'https://github.com/favicon.ico',
+    descriptionCn: '中文描述',
+    collectionRecord: [],
   };
 
   const mockRecord = {

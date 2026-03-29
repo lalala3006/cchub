@@ -9,8 +9,12 @@ export class FocusConfig {
   keyword: string;
 
   @Column({ default: 5 })
-  weight: number;
+  weight: number = 5;
 
   @CreateDateColumn()
   createdAt: Date;
+
+  constructor() {
+    this.weight = 5;
+  }
 }

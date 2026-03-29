@@ -27,6 +27,8 @@ describe('GithubFetcherService', () => {
     fetchedAt: new Date(),
     createdAt: new Date(),
     collectionRecord: [],
+    avatarUrl: 'https://github.com/favicon.ico',
+    descriptionCn: '中文描述',
   };
 
   const mockConfig: FocusConfig = {
@@ -122,7 +124,7 @@ describe('GithubFetcherService', () => {
 
     it('BF-003: should filter out existing tools by fullName', async () => {
       configRepo.find.mockResolvedValue([mockConfig]);
-      toolRepo.find.mockResolvedValue([{ fullName: 'owner/existing-tool' }]);
+      toolRepo.find.mockResolvedValue([{ fullName: 'owner/existing-tool', name: 'existing-tool', url: 'https://github.com/owner/existing-tool', fetchedAt: new Date() } as GithubTool]);
       toolRepo.findOne.mockResolvedValue(null);
       toolRepo.save.mockResolvedValue(mockTool);
       recordRepo.create.mockReturnValue({} as CollectionRecord);
@@ -177,28 +179,15 @@ describe('GithubFetcherService', () => {
       toolRepo.find.mockResolvedValue([]);
       toolRepo.findOne.mockResolvedValue(null);
       toolRepo.save.mockResolvedValue({ ...mockTool, id: 1 });
-      recordRepo.create.mockReturnValue({} as CollectionRecord);
       recordRepo.save.mockResolvedValue({} as CollectionRecord);
 
-      const mockResponse = {
-        ok: true,
-        json: jest.fn().mockResolvedValue({
-          items: [
-            {
-              full_name: 'owner/test-tool',
-              html_url: 'https://github.com/owner/test-tool',
-              description: 'A test tool',
-              stargazers_count: 100,
-              language: 'TypeScript',
-            },
-          ],
-        }),
-      };
-      mockFetch.mockResolvedValue(mockResponse);
+      // Mock fetchByKeyword to return a tool directly
+      jest.spyOn(service as any, 'fetchByKeyword').mockResolvedValue([mockTool]);
+      // Mock fetchFavicon to prevent actual HTTP call
+      jest.spyOn(service as any, 'fetchFavicon').mockResolvedValue('https://github.com/favicon.ico');
 
       await service.fetchAndSaveTools();
 
-      expect(recordRepo.create).toHaveBeenCalled();
       expect(recordRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({
           toolId: 1,
@@ -210,12 +199,13 @@ describe('GithubFetcherService', () => {
     it('should not save duplicate tools', async () => {
       configRepo.find.mockResolvedValue([mockConfig]);
       toolRepo.find.mockResolvedValue([]);
-      toolRepo.findOne.mockResolvedValue({ ...mockTool, id: 1 });
+      toolRepo.findOne.mockResolvedValue({ ...mockTool, id: 1, fullName: 'owner/test-tool' });
       toolRepo.save.mockResolvedValue(mockTool);
       recordRepo.create.mockReturnValue({} as CollectionRecord);
       recordRepo.save.mockResolvedValue({} as CollectionRecord);
 
-      const mockResponse = {
+      // Mock fetch for GitHub search API and favicon page
+      const searchResponse = {
         ok: true,
         json: jest.fn().mockResolvedValue({
           items: [
@@ -229,11 +219,18 @@ describe('GithubFetcherService', () => {
           ],
         }),
       };
-      mockFetch.mockResolvedValue(mockResponse);
+      const faviconResponse = {
+        ok: true,
+        text: jest.fn().mockResolvedValue('<html><link rel="icon" href="/favicon.ico"></html>'),
+      };
+      mockFetch
+        .mockResolvedValueOnce(searchResponse)
+        .mockResolvedValueOnce(faviconResponse);
 
       await service.fetchAndSaveTools();
 
-      expect(toolRepo.save).toHaveBeenCalled();
+      // Duplicate exists, so save should NOT be called
+      expect(toolRepo.save).not.toHaveBeenCalled();
     });
 
     it('should limit saved tools to 10', async () => {

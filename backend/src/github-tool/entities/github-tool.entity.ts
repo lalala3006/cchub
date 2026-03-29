@@ -19,7 +19,7 @@ export class GithubTool {
   description: string;
 
   @Column({ default: 0 })
-  stars: number;
+  stars: number = 0;
 
   @Column({ nullable: true })
   language: string;
@@ -38,4 +38,8 @@ export class GithubTool {
 
   @OneToMany(() => CollectionRecord, (record) => record.tool)
   collectionRecord: CollectionRecord[];
+
+  constructor() {
+    this.stars = 0;
+  }
 }

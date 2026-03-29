@@ -21,14 +21,19 @@ export class CollectionRecord {
   tool: GithubTool;
 
   @Column({ type: 'text', default: CollectionStatus.UNREAD })
-  status: CollectionStatus;
+  status: CollectionStatus = CollectionStatus.UNREAD;
 
   @Column({ default: false })
-  isHidden: boolean;
+  isHidden: boolean = false;
 
   @Column({ type: 'datetime' })
   statusChangedAt: Date;
 
   @CreateDateColumn()
   createdAt: Date;
+
+  constructor() {
+    this.status = CollectionStatus.UNREAD;
+    this.isHidden = false;
+  }
 }
