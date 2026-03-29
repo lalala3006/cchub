@@ -1,16 +1,25 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, ParseIntPipe } from '@nestjs/common';
 import { GithubToolService } from './github-tool.service';
+import { GithubFetcherService } from './github-fetcher.service';
 import { CreateFocusConfigDto } from './dto/create-focus-config.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { CollectionStatus } from './entities/collection-record.entity';
 
 @Controller('github-tools')
 export class GithubToolController {
-  constructor(private readonly service: GithubToolService) {}
+  constructor(
+    private readonly service: GithubToolService,
+    private readonly fetcher: GithubFetcherService,
+  ) {}
 
   @Get('feed')
   getFeed() {
     return this.service.getFeed();
+  }
+
+  @Post('fetch')
+  triggerFetch() {
+    return this.fetcher.fetchAndSaveTools();
   }
 
   @Get('collection')

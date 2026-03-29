@@ -15,6 +15,6 @@ import { FocusConfig } from './entities/focus-config.entity';
   ],
   controllers: [GithubToolController],
   providers: [GithubToolService, GithubFetcherService],
-  exports: [GithubToolService],
+  exports: [GithubToolService, GithubFetcherService],
 })
 export class GithubToolModule {}
