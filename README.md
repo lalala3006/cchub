@@ -104,6 +104,6 @@ cd backend && npm run migration:run
 
 ## 进一步阅读
 
-- [前端知识库](/Users/lalala/Desktop/ccHub/docs/repository-kb/frontend-knowledge-base.md)
-- [后端知识库](/Users/lalala/Desktop/ccHub/docs/repository-kb/backend-knowledge-base.md)
-- [代码 Review](/Users/lalala/Desktop/ccHub/docs/repository-kb/code-review.md)
+- [仓库知识库索引](docs/repository-kb/README.md)
+- [前端知识库](docs/repository-kb/frontend-knowledge-base.md)
+- [后端知识库](docs/repository-kb/backend-knowledge-base.md)
