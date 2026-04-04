@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Form, Input, Button, message } from 'antd';
 import { systemConfigApi } from '../../api/systemConfigApi';
+import { getErrorMessage } from '../../api/types';
 import styles from './LlmConfig.module.css';
 
 interface LlmConfigForm {
@@ -27,8 +28,8 @@ export const LlmConfig: React.FC<LlmConfigProps> = ({ fullPage = false }) => {
         ...config,
         apiKey: '',
       });
-    } catch {
-      message.error('加载配置失败，请刷新页面重试');
+    } catch (error) {
+      message.error(getErrorMessage(error, '加载配置失败，请刷新页面重试'));
     }
   }, [form]);
 
@@ -50,8 +51,8 @@ export const LlmConfig: React.FC<LlmConfigProps> = ({ fullPage = false }) => {
       form.setFieldValue('apiKey', '');
       await loadConfig();
       if (!fullPage) setCollapsed(true);
-    } catch {
-      message.error('保存失败');
+    } catch (error) {
+      message.error(getErrorMessage(error, '保存失败'));
     } finally {
       setLoading(false);
     }

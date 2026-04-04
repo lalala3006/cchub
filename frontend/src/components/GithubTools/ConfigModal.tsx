@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, message } from 'antd';
 import { githubToolsApi } from '../../api/githubToolsApi';
+import { getErrorMessage } from '../../api/types';
 import type { FocusConfig } from '../../api/githubToolsApi';
 import styles from './ConfigModal.module.css';
 
@@ -26,8 +27,8 @@ export function ConfigModal({ open, onClose }: ConfigModalProps) {
     try {
       const data = await githubToolsApi.getConfig();
       setConfigs(data);
-    } catch {
-      message.error('加载配置失败');
+    } catch (error) {
+      message.error(getErrorMessage(error, '加载配置失败'));
     } finally {
       setLoading(false);
     }
@@ -40,9 +41,9 @@ export function ConfigModal({ open, onClose }: ConfigModalProps) {
       message.success('添加成功');
       setKeyword('');
       setWeight(5);
-      loadConfigs();
-    } catch {
-      message.error('添加失败');
+      await loadConfigs();
+    } catch (error) {
+      message.error(getErrorMessage(error, '添加失败'));
     }
   };
 
@@ -50,18 +51,18 @@ export function ConfigModal({ open, onClose }: ConfigModalProps) {
     try {
       await githubToolsApi.deleteConfig(id);
       message.success('删除成功');
-      loadConfigs();
-    } catch {
-      message.error('删除失败');
+      await loadConfigs();
+    } catch (error) {
+      message.error(getErrorMessage(error, '删除失败'));
     }
   };
 
   const handleUpdateWeight = async (id: number, w: number) => {
     try {
       await githubToolsApi.updateConfig(id, w);
-      loadConfigs();
-    } catch {
-      message.error('更新失败');
+      await loadConfigs();
+    } catch (error) {
+      message.error(getErrorMessage(error, '更新失败'));
     }
   };
 

@@ -2,182 +2,114 @@
 
 ## 1. 定位
 
-`frontend/` 是一个基于 React 19 + TypeScript + Vite 的单页应用，承担三个主要界面域：
+`frontend/` 是一个基于 React 19 + TypeScript + Vite 的单页应用，当前承担：
 
-- 主页 `/`：AI 对话入口，拼接本地业务上下文后请求后端 LLM 接口。
-- TODO `/todo`：任务管理 CRUD 页面。
-- GitHub 工具 `/github-tools`：项目推荐、收藏状态流转、关注关键词配置。
-- 设置 `/settings`：LLM 配置管理。
+- `/login`：登录入口
+- `/`：AI 对话助手
+- `/todo`：TODO 管理
+- `/github-tools`：GitHub 工具推荐与收藏流转
+- `/settings`：LLM 配置
 
-前端当前没有全局状态库，主要依赖页面级 `useState` / `useEffect` 管理远程数据和 UI 状态。
+这次重构后，前端的核心变化是：
+
+- 引入共享 auth store 管理登录态
+- 引入共享 chat store 管理多轮消息
+- 引入统一 API client 处理 base URL、鉴权和错误模型
+- 将首页上下文拼装提取为独立 context builder
 
 ## 2. 技术栈与运行方式
 
 - 路由：`react-router-dom`
-- UI 组件：`antd`，但项目中也混用了不少原生 `button` / `input`
+- UI 组件：`antd`
 - 构建：Vite
-- API 通信：浏览器原生 `fetch`
+- API 通信：`src/api/client.ts` 基于浏览器原生 `fetch` 的统一封装
 
-开发态通过 [frontend/vite.config.ts](/Users/lalala/Desktop/ccHub/frontend/vite.config.ts) 将 `/api` 代理到 `http://localhost:4000`。
+开发态默认请求 `http://localhost:4000/api/v1`，容器部署时可通过
+`VITE_API_URL=/api/v1` 走同域代理。
 
-API 基地址的写法分两种：
-
-- 大多数模块默认 `import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1'`
-- Docker Compose 中为前端构建传入 `VITE_API_URL=/api/v1`
-
-这意味着：
-
-- 本地裸跑时前端会直接请求 `4000`
-- 容器部署时前端会请求同域 `/api/v1`
-
-## 3. 路由与页面分工
+## 3. 路由与应用壳
 
 入口见 [frontend/src/App.tsx](/Users/lalala/Desktop/ccHub/frontend/src/App.tsx)。
 
-- `/` -> [frontend/src/pages/HomePage.tsx](/Users/lalala/Desktop/ccHub/frontend/src/pages/HomePage.tsx)
-- `/todo` -> [frontend/src/pages/TodoPage.tsx](/Users/lalala/Desktop/ccHub/frontend/src/pages/TodoPage.tsx)
-- `/github-tools` -> [frontend/src/pages/GithubToolsPage.tsx](/Users/lalala/Desktop/ccHub/frontend/src/pages/GithubToolsPage.tsx)
-- `/settings` -> [frontend/src/pages/SettingsPage.tsx](/Users/lalala/Desktop/ccHub/frontend/src/pages/SettingsPage.tsx)
+- 未登录时进入 [frontend/src/pages/LoginPage.tsx](/Users/lalala/Desktop/ccHub/frontend/src/pages/LoginPage.tsx)
+- 登录后进入 [frontend/src/components/Layout/Layout.tsx](/Users/lalala/Desktop/ccHub/frontend/src/components/Layout/Layout.tsx)
 
-公共外壳由 [frontend/src/components/Layout/Layout.tsx](/Users/lalala/Desktop/ccHub/frontend/src/components/Layout/Layout.tsx) 和 [frontend/src/components/Layout/Sidebar.tsx](/Users/lalala/Desktop/ccHub/frontend/src/components/Layout/Sidebar.tsx) 提供，采用“左侧导航 + 右侧内容区”的后台布局。
+`AppProviders` 位于
+[frontend/src/app/AppProviders.tsx](/Users/lalala/Desktop/ccHub/frontend/src/app/AppProviders.tsx)，
+负责启动时恢复会话和注册 401 回收逻辑。
 
-## 4. API 层设计
+## 4. 状态与 API 设计
 
-当前 API 封装集中在 `frontend/src/api/`：
+### 4.1 全局状态
+
+- [frontend/src/features/auth/authStore.ts](/Users/lalala/Desktop/ccHub/frontend/src/features/auth/authStore.ts)
+  管理当前用户、token、bootstrap 状态
+- [frontend/src/features/chat/chatStore.ts](/Users/lalala/Desktop/ccHub/frontend/src/features/chat/chatStore.ts)
+  管理多轮消息、发送态和错误态
+- 轻量 store 基座在
+  [frontend/src/app/createStore.ts](/Users/lalala/Desktop/ccHub/frontend/src/app/createStore.ts)
+
+### 4.2 API 层
+
+统一 client 位于
+[frontend/src/api/client.ts](/Users/lalala/Desktop/ccHub/frontend/src/api/client.ts)。
+
+职责：
+
+- 计算 `API_BASE_URL`
+- 自动附带 `Authorization`
+- 统一解析错误 envelope
+- 遇到 401 时触发全局登录态回收
+
+领域 API 文件仍保留，但只暴露业务方法：
 
 - [frontend/src/api/todoApi.ts](/Users/lalala/Desktop/ccHub/frontend/src/api/todoApi.ts)
 - [frontend/src/api/githubToolsApi.ts](/Users/lalala/Desktop/ccHub/frontend/src/api/githubToolsApi.ts)
 - [frontend/src/api/systemConfigApi.ts](/Users/lalala/Desktop/ccHub/frontend/src/api/systemConfigApi.ts)
-
-特点：
-
-- 基本都是轻量封装，未抽象统一的请求客户端。
-- `todoApi` 有统一 `handleResponse`，错误处理相对完整。
-- `githubToolsApi` / `systemConfigApi` 直接各自判断 `res.ok`，风格不统一。
-- `githubToolsApi` 暴露了 `API_BASE_URL`，被主页 AI 页面直接复用。
-- `fetchWithAuth()` 已定义但当前没有任何地方调用，说明认证机制尚未真正落地。
+- [frontend/src/features/auth/authApi.ts](/Users/lalala/Desktop/ccHub/frontend/src/features/auth/authApi.ts)
 
 ## 5. 业务模块梳理
 
-### 5.1 HomePage：AI 对话页
+### 5.1 HomePage
 
-文件：[frontend/src/pages/HomePage.tsx](/Users/lalala/Desktop/ccHub/frontend/src/pages/HomePage.tsx)
+文件：
 
-主流程：
+- [frontend/src/pages/HomePage.tsx](/Users/lalala/Desktop/ccHub/frontend/src/pages/HomePage.tsx)
+- [frontend/src/features/chat/contextBuilder.ts](/Users/lalala/Desktop/ccHub/frontend/src/features/chat/contextBuilder.ts)
 
-1. 用户输入问题。
-2. `buildContext()` 拉取 TODO 和 GitHub 深度使用工具，拼成中文上下文。
-3. `callLlm()` 将上下文和用户问题打包成单条 `user` 消息，发给 `/llm/chat`。
-4. 将后端返回的 `reply` 追加到本地消息列表。
+当前流程：
 
-设计特点：
+1. 用户输入消息
+2. `contextBuilder` 拉取 TODO 和深度使用 GitHub 工具，生成上下文快照
+3. 页面把 `system + 历史消息 + 当前消息` 发送给 `/llm/chat`
+4. 回复追加到共享 chat store
 
-- 对话历史只保存在前端内存，不会持久化。
-- 实际发给模型的不是多轮上下文，而是“本地拼接后的单轮 prompt”。
-- 主页依赖两个业务域：TODO 与 GitHub 收藏，因此它是跨模块聚合页。
+### 5.2 TodoPage
 
-### 5.2 TodoPage：任务管理
+页面仍负责列表拉取与 CRUD 交互，但远程请求已经统一走 `todoApi`，错误提示统一由共享错误模型驱动。
 
-核心文件：
+### 5.3 GithubToolsPage
 
-- [frontend/src/pages/TodoPage.tsx](/Users/lalala/Desktop/ccHub/frontend/src/pages/TodoPage.tsx)
-- [frontend/src/components/Todo/TodoList.tsx](/Users/lalala/Desktop/ccHub/frontend/src/components/Todo/TodoList.tsx)
-- [frontend/src/components/Todo/TodoItem.tsx](/Users/lalala/Desktop/ccHub/frontend/src/components/Todo/TodoItem.tsx)
-- [frontend/src/components/Todo/TodoForm.tsx](/Users/lalala/Desktop/ccHub/frontend/src/components/Todo/TodoForm.tsx)
+页面仍负责 unread / practiced / deep_use 三个视图切换，但请求、错误、鉴权都已收敛到共享 client。
 
-页面职责：
+### 5.4 SettingsPage
 
-- 页面组件负责远程请求、错误处理、表单开关、编辑态切换。
-- 列表组件只负责遍历。
-- 单项组件负责展示与触发事件。
-- 表单组件负责本地输入态和提交。
+LLM 配置页保留原入口，但已通过“掩码只读、空值不覆盖”的契约避免误写 secret。
 
-主要交互：
-
-- 初次加载：`fetchTodos()`
-- 新建：`todoApi.create()`
-- 编辑：`todoApi.update()`
-- 删除：`todoApi.delete()`
-- 勾选状态：仅在 `done` 和 `pending` 间切换，不涉及 `in_progress`
-
-### 5.3 GithubToolsPage：GitHub 工具流转页
-
-核心文件：
-
-- [frontend/src/pages/GithubToolsPage.tsx](/Users/lalala/Desktop/ccHub/frontend/src/pages/GithubToolsPage.tsx)
-- [frontend/src/components/GithubTools/ToolCard.tsx](/Users/lalala/Desktop/ccHub/frontend/src/components/GithubTools/ToolCard.tsx)
-- [frontend/src/components/GithubTools/ConfigModal.tsx](/Users/lalala/Desktop/ccHub/frontend/src/components/GithubTools/ConfigModal.tsx)
-
-页面模型：
-
-- `unread`：展示推荐 feed
-- `practiced`：展示已实践收藏
-- `deep_use`：展示深度使用收藏
-
-当前交互流：
-
-- unread 页签拉取 `/github-tools/feed`
-- 其它页签拉取 `/github-tools/collection?status=...`
-- “保留”触发 `keepTool()`
-- “不感兴趣”触发 `hideTool()`
-- “标记为深度使用 / 不再使用”触发 `updateStatus()`
-- “管理关注领域”打开配置弹窗，对应 `FocusConfig`
-
-### 5.4 SettingsPage：LLM 配置
-
-核心文件：
-
-- [frontend/src/pages/SettingsPage.tsx](/Users/lalala/Desktop/ccHub/frontend/src/pages/SettingsPage.tsx)
-- [frontend/src/components/Layout/LlmConfig.tsx](/Users/lalala/Desktop/ccHub/frontend/src/components/Layout/LlmConfig.tsx)
-
-当前是一个纯配置页，主要管理：
-
-- `apiUrl`
-- `apiKey`
-- `model`
-
-保存后调用 `/system-config/llm` 的 `PUT` 接口。
-
-## 6. 前端数据流与耦合关系
-
-### 6.1 TODO 域
-
-- 页面从 `todoApi` 拉取数据
-- 表单与条目组件不直接依赖后端结构以外的状态
-- 与主页 AI 页有二次耦合，因为主页会再请求 TODO 数据拼上下文
-
-### 6.2 GitHub 工具域
-
-- `GithubToolsPage` 同时维护 `feed` 和 `collection` 两套数据源
-- 状态流转依赖后端 `CollectionStatus`
-- `ConfigModal` 与主页面解耦较浅，保存后重新拉配置
-- 主页 AI 页也依赖 `deep_use` 收藏列表，形成跨页复用
-
-### 6.3 LLM 配置域
-
-- 设置页配置由后端数据库驱动
-- 主页 AI 页并不直接使用前端设置值，而是请求后端 `/llm/chat`
-- 实际模型调用配置完全在后端生效，前端只是配置入口
-
-## 7. 当前代码组织特征
+## 6. 当前组织特征
 
 优点：
 
-- 页面边界清晰，目录分层直观。
-- API、页面、组件已做基础拆分。
-- 样式以 CSS Module 为主，局部污染风险较低。
+- 共享会话、对话与请求层已经形成
+- 页面边界仍然清晰
+- 旧页面路由和用户动作保持不变
 
-限制：
+剩余限制：
 
-- 没有统一请求层、错误模型和 loading 模型。
-- 页面的副作用逻辑偏散，依赖 `useEffect` + 手工刷新。
-- 类型复用不足，多个地方直接用 `any` 或重复定义接口。
-- 主页 AI 页自己拼 prompt，缺少独立的“上下文构建器”抽象。
+- TODO 与 GitHub 域的远程状态仍主要由页面本地副作用管理
+- chat store 目前只做内存态，不做跨刷新持久化
 
-## 8. 维护建议
+## 7. 维护建议
 
-- 优先统一 API 客户端和错误处理方式。
-- 将主页 AI 的上下文构建逻辑独立成 service/hook，避免继续耦合页面。
-- 为 GitHub 工具页补齐交互测试，尤其是状态流转与卡片点击行为。
-- 为设置页设计“掩码回显”和“仅修改字段提交”的一致策略，避免配置被覆盖。
-
+- 若后续引入更复杂权限，优先扩展 auth store 和 `/auth/me` 契约
+- 若后续需要更强缓存/失效策略，再在统一 client 之上扩展数据层

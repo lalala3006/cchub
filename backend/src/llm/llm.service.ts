@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
+import { ApiError } from '../common/exceptions/api-error';
+import { ErrorCodes } from '../common/exceptions/error-codes';
 import { SystemConfigService } from '../system-config/system-config.service';
 
 interface ChatMessage {
@@ -44,6 +46,9 @@ export class LlmService {
 
   async chat(messages: ChatMessage[]): Promise<string> {
     const config: LlmConfig = await this.systemConfigService.getRawLlmConfig();
+    if (!config.apiUrl || !config.apiKey || !config.model) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, ErrorCodes.CONFIG_MISSING, 'LLM 配置不完整');
+    }
 
     // 判断是 Anthropic 格式还是 OpenAI 格式
     const isAnthropicFormat = config.apiUrl.includes('anthropic');

@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SystemConfig } from './system-config.entity';
+import { SYSTEM_CONFIG_CATEGORY_LLM, SYSTEM_CONFIG_KEYS } from './system-config.keys';
+import { LlmConfig, LlmConfigUpdate } from './system-config.types';
 
 @Injectable()
 export class SystemConfigService {
@@ -16,42 +18,42 @@ export class SystemConfigService {
     return apiKey.substring(0, 2) + '***' + apiKey.substring(apiKey.length - 2);
   }
 
-  async getLlmConfig(): Promise<{ apiUrl: string; apiKey: string; model: string }> {
-    const configs = await this.configRepo.find({ where: { category: 'llm' } });
+  async getLlmConfig(): Promise<LlmConfig> {
+    const configs = await this.configRepo.find({ where: { category: SYSTEM_CONFIG_CATEGORY_LLM } });
     const configMap = new Map(configs.map(c => [c.key, c.value]));
 
-    const apiKey = configMap.get('llm_api_key') || '';
+    const apiKey = configMap.get(SYSTEM_CONFIG_KEYS.llmApiKey) || '';
     return {
-      apiUrl: configMap.get('llm_api_url') || '',
+      apiUrl: configMap.get(SYSTEM_CONFIG_KEYS.llmApiUrl) || '',
       apiKey: this.maskApiKey(apiKey),
-      model: configMap.get('llm_model') || '',
+      model: configMap.get(SYSTEM_CONFIG_KEYS.llmModel) || '',
     };
   }
 
-  async getRawLlmConfig(): Promise<{ apiUrl: string; apiKey: string; model: string }> {
-    const configs = await this.findByCategory('llm');
+  async getRawLlmConfig(): Promise<LlmConfig> {
+    const configs = await this.findByCategory(SYSTEM_CONFIG_CATEGORY_LLM);
     const configMap = new Map(configs.map(c => [c.key, c.value]));
 
     return {
-      apiUrl: configMap.get('llm_api_url') || '',
-      apiKey: configMap.get('llm_api_key') || '',
-      model: configMap.get('llm_model') || '',
+      apiUrl: configMap.get(SYSTEM_CONFIG_KEYS.llmApiUrl) || '',
+      apiKey: configMap.get(SYSTEM_CONFIG_KEYS.llmApiKey) || '',
+      model: configMap.get(SYSTEM_CONFIG_KEYS.llmModel) || '',
     };
   }
 
-  async updateLlmConfig(updates: { apiUrl?: string; apiKey?: string; model?: string }): Promise<{ apiUrl: string; apiKey: string; model: string }> {
+  async updateLlmConfig(updates: LlmConfigUpdate): Promise<LlmConfig> {
     const configsToUpsert: Partial<SystemConfig>[] = [];
     const currentConfig = await this.getRawLlmConfig();
     const maskedCurrentApiKey = this.maskApiKey(currentConfig.apiKey);
 
     if (updates.apiUrl !== undefined) {
-      configsToUpsert.push({ key: 'llm_api_url', value: updates.apiUrl, category: 'llm' });
+      configsToUpsert.push({ key: SYSTEM_CONFIG_KEYS.llmApiUrl, value: updates.apiUrl, category: SYSTEM_CONFIG_CATEGORY_LLM });
     }
     if (updates.apiKey !== undefined && updates.apiKey !== '' && updates.apiKey !== maskedCurrentApiKey) {
-      configsToUpsert.push({ key: 'llm_api_key', value: updates.apiKey, category: 'llm' });
+      configsToUpsert.push({ key: SYSTEM_CONFIG_KEYS.llmApiKey, value: updates.apiKey, category: SYSTEM_CONFIG_CATEGORY_LLM });
     }
     if (updates.model !== undefined) {
-      configsToUpsert.push({ key: 'llm_model', value: updates.model, category: 'llm' });
+      configsToUpsert.push({ key: SYSTEM_CONFIG_KEYS.llmModel, value: updates.model, category: SYSTEM_CONFIG_CATEGORY_LLM });
     }
 
     // TypeORM's upsert() supports batch operations natively
@@ -70,7 +72,7 @@ export class SystemConfigService {
     return this.configRepo.find({ where: { category } });
   }
 
-  async setConfig(key: string, value: string, category: string = 'llm'): Promise<SystemConfig> {
+  async setConfig(key: string, value: string, category: string = SYSTEM_CONFIG_CATEGORY_LLM): Promise<SystemConfig> {
     let config = await this.configRepo.findOne({ where: { key } });
     if (config) {
       config.value = value;

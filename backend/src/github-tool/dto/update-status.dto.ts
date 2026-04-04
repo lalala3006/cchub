@@ -1,7 +1,11 @@
-import { IsEnum } from 'class-validator';
+import { IsIn } from 'class-validator';
 import { CollectionStatus } from '../entities/collection-record.entity';
 
 export class UpdateStatusDto {
-  @IsEnum(CollectionStatus)
+  @IsIn([
+    CollectionStatus.PRACTICED,
+    CollectionStatus.DEEP_USE,
+    CollectionStatus.NO_LONGER_USED,
+  ])
   status: CollectionStatus;
 }

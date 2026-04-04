@@ -1,74 +1,31 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder, Not } from 'typeorm';
 import { GithubToolService } from './github-tool.service';
-import { GithubTool } from './entities/github-tool.entity';
-import { CollectionRecord, CollectionStatus } from './entities/collection-record.entity';
-import { FocusConfig } from './entities/focus-config.entity';
-import { CreateFocusConfigDto } from './dto/create-focus-config.dto';
-import { UpdateStatusDto } from './dto/update-status.dto';
-import { NotFoundException } from '@nestjs/common';
+import { CollectionStatus } from './entities/collection-record.entity';
+import { GithubFeedService } from './services/github-feed.service';
+import { GithubWorkflowService } from './services/github-workflow.service';
+import { GithubConfigService } from './services/github-config.service';
 
 describe('GithubToolService', () => {
   let service: GithubToolService;
-  let toolRepo: jest.Mocked<Repository<GithubTool>>;
-  let recordRepo: jest.Mocked<Repository<CollectionRecord>>;
-  let configRepo: jest.Mocked<Repository<FocusConfig>>;
+  let feedService: jest.Mocked<GithubFeedService>;
+  let workflowService: jest.Mocked<GithubWorkflowService>;
+  let configService: jest.Mocked<GithubConfigService>;
 
-  const mockTool: GithubTool = {
+  const mockTool = {
     id: 1,
     name: 'test-tool',
     fullName: 'owner/test-tool',
     url: 'https://github.com/owner/test-tool',
-    description: 'A test tool',
-    stars: 100,
-    language: 'TypeScript',
-    fetchedAt: new Date(),
-    createdAt: new Date(),
-    collectionRecord: [],
-    avatarUrl: 'https://github.com/favicon.ico',
-    descriptionCn: '中文描述',
   };
 
-  const mockRecord: CollectionRecord = {
+  const mockRecord = {
     id: 1,
     toolId: 1,
     tool: mockTool,
-    status: CollectionStatus.UNREAD,
+    status: CollectionStatus.PRACTICED,
     isHidden: false,
     statusChangedAt: new Date(),
     createdAt: new Date(),
-  };
-
-  const mockConfig: FocusConfig = {
-    id: 1,
-    keyword: 'nestjs',
-    weight: 5,
-    createdAt: new Date(),
-  };
-
-  const createMockQueryBuilder = () => {
-    const mockQb = {
-      innerJoinAndSelect: jest.fn().mockReturnThis(),
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      orderBy: jest.fn().mockReturnThis(),
-      take: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([mockTool]),
-    } as unknown as jest.Mocked<SelectQueryBuilder<GithubTool>>;
-    return mockQb;
-  };
-
-  const createRecordQueryBuilder = () => {
-    const mockQb = {
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      orderBy: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([mockRecord]),
-    } as unknown as jest.Mocked<SelectQueryBuilder<CollectionRecord>>;
-    return mockQb;
   };
 
   beforeEach(async () => {
@@ -76,260 +33,90 @@ describe('GithubToolService', () => {
       providers: [
         GithubToolService,
         {
-          provide: getRepositoryToken(GithubTool),
+          provide: GithubFeedService,
           useValue: {
-            createQueryBuilder: jest.fn(),
-            find: jest.fn(),
-            findOne: jest.fn(),
-            save: jest.fn(),
-            create: jest.fn(),
+            getFeed: jest.fn(),
+            getCollection: jest.fn(),
           },
         },
         {
-          provide: getRepositoryToken(CollectionRecord),
+          provide: GithubWorkflowService,
           useValue: {
-            createQueryBuilder: jest.fn(),
-            find: jest.fn(),
-            findOne: jest.fn(),
-            save: jest.fn(),
-            create: jest.fn(),
-            delete: jest.fn(),
+            keepTool: jest.fn(),
+            hideTool: jest.fn(),
+            updateStatus: jest.fn(),
           },
         },
         {
-          provide: getRepositoryToken(FocusConfig),
+          provide: GithubConfigService,
           useValue: {
-            find: jest.fn(),
-            findOne: jest.fn(),
-            save: jest.fn(),
-            create: jest.fn(),
-            delete: jest.fn(),
-            update: jest.fn(),
+            getConfig: jest.fn(),
+            createConfig: jest.fn(),
+            deleteConfig: jest.fn(),
+            updateConfig: jest.fn(),
           },
         },
       ],
     }).compile();
 
-    service = module.get<GithubToolService>(GithubToolService);
-    toolRepo = module.get(getRepositoryToken(GithubTool));
-    recordRepo = module.get(getRepositoryToken(CollectionRecord));
-    configRepo = module.get(getRepositoryToken(FocusConfig));
+    service = module.get(GithubToolService);
+    feedService = module.get(GithubFeedService);
+    workflowService = module.get(GithubWorkflowService);
+    configService = module.get(GithubConfigService);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('getFeed', () => {
-    it('BS-001: should return unread visible tools limited to 10 sorted by time', async () => {
-      const mockQb = createMockQueryBuilder();
-      toolRepo.createQueryBuilder.mockReturnValue(mockQb);
+  it('delegates feed loading to GithubFeedService', async () => {
+    feedService.getFeed.mockResolvedValue([mockTool] as never);
 
-      const result = await service.getFeed();
+    const result = await service.getFeed();
 
-      expect(toolRepo.createQueryBuilder).toHaveBeenCalledWith('tool');
-      expect(mockQb.innerJoinAndSelect).toHaveBeenCalledWith('tool.collectionRecord', 'record');
-      expect(mockQb.where).toHaveBeenCalledWith('record.isHidden = :hidden', { hidden: false });
-      expect(mockQb.andWhere).toHaveBeenCalledWith('record.status = :status', { status: CollectionStatus.UNREAD });
-      expect(mockQb.orderBy).toHaveBeenCalledWith('tool.createdAt', 'DESC');
-      expect(mockQb.take).toHaveBeenCalledWith(10);
-      expect(result).toEqual([mockTool]);
-    });
+    expect(feedService.getFeed).toHaveBeenCalled();
+    expect(result).toEqual([mockTool]);
   });
 
-  describe('getCollection', () => {
-    it('BS-002: should filter by status when provided', async () => {
-      const mockQb = createRecordQueryBuilder();
-      recordRepo.createQueryBuilder.mockReturnValue(mockQb);
-      jest.spyOn(service as any, 'cleanupOldRecords').mockResolvedValue(undefined);
+  it('delegates collection loading to GithubFeedService', async () => {
+    feedService.getCollection.mockResolvedValue([mockRecord] as never);
 
-      await service.getCollection(CollectionStatus.PRACTICED);
+    const result = await service.getCollection(CollectionStatus.PRACTICED, 'tool');
 
-      expect(mockQb.andWhere).toHaveBeenCalledWith('record.status = :status', { status: CollectionStatus.PRACTICED });
-    });
-
-    it('BS-003: should support search functionality', async () => {
-      const mockQb = createRecordQueryBuilder();
-      recordRepo.createQueryBuilder.mockReturnValue(mockQb);
-      jest.spyOn(service as any, 'cleanupOldRecords').mockResolvedValue(undefined);
-
-      await service.getCollection(undefined, 'test');
-
-      expect(mockQb.andWhere).toHaveBeenCalledWith(
-        '(tool.name LIKE :search OR tool.description LIKE :search)',
-        { search: '%test%' },
-      );
-    });
-
-    it('should filter by isHidden = false', async () => {
-      const mockQb = createRecordQueryBuilder();
-      recordRepo.createQueryBuilder.mockReturnValue(mockQb);
-      jest.spyOn(service as any, 'cleanupOldRecords').mockResolvedValue(undefined);
-
-      await service.getCollection();
-
-      expect(mockQb.where).toHaveBeenCalledWith('record.isHidden = :hidden', { hidden: false });
-    });
+    expect(feedService.getCollection).toHaveBeenCalledWith(CollectionStatus.PRACTICED, 'tool');
+    expect(result).toEqual([mockRecord]);
   });
 
-  describe('keepTool', () => {
-    it('BS-004: should create new record if not exists', async () => {
-      recordRepo.findOne.mockResolvedValue(null);
-      recordRepo.create.mockReturnValue(mockRecord);
-      recordRepo.save.mockResolvedValue(mockRecord);
+  it('delegates keep and hide workflow actions to GithubWorkflowService', async () => {
+    workflowService.keepTool.mockResolvedValue(mockRecord as never);
+    workflowService.hideTool.mockResolvedValue(undefined as never);
 
-      const result = await service.keepTool(1);
+    await expect(service.keepTool(1)).resolves.toEqual(mockRecord);
+    await expect(service.hideTool(1)).resolves.toBeUndefined();
 
-      expect(recordRepo.findOne).toHaveBeenCalledWith({ where: { toolId: 1 } });
-      expect(recordRepo.create).toHaveBeenCalledWith({ toolId: 1, status: CollectionStatus.UNREAD });
-      expect(recordRepo.save).toHaveBeenCalled();
-      expect(result.status).toBe(CollectionStatus.PRACTICED);
-    });
-
-    it('BS-005: should update existing record', async () => {
-      const existingRecord = { ...mockRecord, status: CollectionStatus.UNREAD };
-      recordRepo.findOne.mockResolvedValue(existingRecord);
-      recordRepo.save.mockResolvedValue({ ...existingRecord, status: CollectionStatus.PRACTICED });
-
-      const result = await service.keepTool(1);
-
-      expect(recordRepo.create).not.toHaveBeenCalled();
-      expect(result.status).toBe(CollectionStatus.PRACTICED);
-    });
+    expect(workflowService.keepTool).toHaveBeenCalledWith(1);
+    expect(workflowService.hideTool).toHaveBeenCalledWith(1);
   });
 
-  describe('hideTool', () => {
-    it('BS-006: should hide tool and be idempotent', async () => {
-      recordRepo.findOne.mockResolvedValue(null);
-      recordRepo.create.mockReturnValue(mockRecord);
-      recordRepo.save.mockResolvedValue({ ...mockRecord, isHidden: true });
+  it('delegates status updates to GithubWorkflowService', async () => {
+    workflowService.updateStatus.mockResolvedValue({ ...mockRecord, status: CollectionStatus.DEEP_USE } as never);
 
-      await service.hideTool(1);
+    const result = await service.updateStatus(1, { status: CollectionStatus.DEEP_USE });
 
-      expect(recordRepo.create).toHaveBeenCalledWith({ toolId: 1 });
-      expect(recordRepo.save).toHaveBeenCalled();
-      expect(recordRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ isHidden: true }),
-      );
-    });
-
-    it('BS-007: should update existing record to hidden', async () => {
-      const existingRecord = { ...mockRecord, isHidden: false };
-      recordRepo.findOne.mockResolvedValue(existingRecord);
-      recordRepo.save.mockResolvedValue({ ...existingRecord, isHidden: true });
-
-      await service.hideTool(1);
-
-      expect(recordRepo.create).not.toHaveBeenCalled();
-      expect(recordRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ isHidden: true }),
-      );
-    });
+    expect(workflowService.updateStatus).toHaveBeenCalledWith(1, CollectionStatus.DEEP_USE);
+    expect(result.status).toBe(CollectionStatus.DEEP_USE);
   });
 
-  describe('updateStatus', () => {
-    it('BS-008: should update status correctly', async () => {
-      const existingRecord = { ...mockRecord, status: CollectionStatus.UNREAD };
-      recordRepo.findOne.mockResolvedValue(existingRecord);
-      const dto: UpdateStatusDto = { status: CollectionStatus.DEEP_USE };
-      recordRepo.save.mockResolvedValue({ ...existingRecord, status: CollectionStatus.DEEP_USE });
+  it('delegates config CRUD operations to GithubConfigService', async () => {
+    const config = { id: 1, keyword: 'nestjs', weight: 5, createdAt: new Date() };
+    configService.getConfig.mockResolvedValue([config] as never);
+    configService.createConfig.mockResolvedValue(config as never);
+    configService.deleteConfig.mockResolvedValue(undefined as never);
+    configService.updateConfig.mockResolvedValue({ ...config, weight: 8 } as never);
 
-      const result = await service.updateStatus(1, dto);
-
-      expect(result.status).toBe(CollectionStatus.DEEP_USE);
-      expect(recordRepo.save).toHaveBeenCalled();
-    });
-
-    it('BS-009: should throw error when record not found', async () => {
-      recordRepo.findOne.mockResolvedValue(null);
-      const dto: UpdateStatusDto = { status: CollectionStatus.PRACTICED };
-
-      await expect(service.updateStatus(999, dto)).rejects.toThrow(NotFoundException);
-    });
-  });
-
-  describe('Config CRUD operations', () => {
-    it('BS-010: createConfig should create and save new config', async () => {
-      const dto: CreateFocusConfigDto = { keyword: 'nestjs', weight: 5 };
-      configRepo.create.mockReturnValue(mockConfig);
-      configRepo.save.mockResolvedValue(mockConfig);
-
-      const result = await service.createConfig(dto);
-
-      expect(configRepo.create).toHaveBeenCalledWith(dto);
-      expect(configRepo.save).toHaveBeenCalled();
-      expect(result).toEqual(mockConfig);
-    });
-
-    it('BS-011: deleteConfig should delete config by id', async () => {
-      configRepo.delete.mockResolvedValue({ affected: 1, raw: [] });
-
-      await service.deleteConfig(1);
-
-      expect(configRepo.delete).toHaveBeenCalledWith(1);
-    });
-
-    it('BS-012: updateConfig should update weight and return updated config', async () => {
-      configRepo.update.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
-      configRepo.findOne.mockResolvedValue({ ...mockConfig, weight: 8 });
-
-      const result = await service.updateConfig(1, 8);
-
-      expect(configRepo.update).toHaveBeenCalledWith(1, { weight: 8 });
-      expect(configRepo.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
-      expect(result.weight).toBe(8);
-    });
-
-    it('should throw when updated config is missing', async () => {
-      configRepo.update.mockResolvedValue({ affected: 0, raw: [], generatedMaps: [] });
-      configRepo.findOne.mockResolvedValue(null);
-
-      await expect(service.updateConfig(999, 8)).rejects.toThrow(NotFoundException);
-    });
-
-    it('BS-013: getConfig should return configs ordered by weight desc', async () => {
-      configRepo.find.mockResolvedValue([mockConfig]);
-
-      const result = await service.getConfig();
-
-      expect(configRepo.find).toHaveBeenCalledWith({ order: { weight: 'DESC' } });
-      expect(result).toEqual([mockConfig]);
-    });
-  });
-
-  describe('cleanupOldRecords', () => {
-    it('BS-014: should delete old non-deep_use records', async () => {
-      recordRepo.delete.mockResolvedValue({ affected: 5, raw: [] });
-
-      await (service as any).cleanupOldRecords();
-
-      expect(recordRepo.delete).toHaveBeenCalledWith(
-        expect.objectContaining({
-          status: Not(CollectionStatus.DEEP_USE),
-          isHidden: false,
-        }),
-      );
-    });
-
-    it('BS-015: should preserve deep_use records', async () => {
-      recordRepo.delete.mockResolvedValue({ affected: 0, raw: [] });
-
-      await (service as any).cleanupOldRecords();
-
-      const deleteCall = recordRepo.delete.mock.calls[0][0];
-      expect((deleteCall as any).status).toBeDefined();
-    });
-
-    it('BS-016: should only delete records older than 6 months', async () => {
-      recordRepo.delete.mockResolvedValue({ affected: 1, raw: [] });
-
-      await (service as any).cleanupOldRecords();
-
-      const deleteCall = recordRepo.delete.mock.calls[0][0];
-      // Verify delete was called with conditions - just check properties exist
-      expect(deleteCall).toHaveProperty('status');
-      expect(deleteCall).toHaveProperty('statusChangedAt');
-      expect(deleteCall).toHaveProperty('isHidden');
-    });
+    await expect(service.getConfig()).resolves.toEqual([config]);
+    await expect(service.createConfig({ keyword: 'nestjs', weight: 5 })).resolves.toEqual(config);
+    await expect(service.deleteConfig(1)).resolves.toBeUndefined();
+    await expect(service.updateConfig(1, 8)).resolves.toEqual({ ...config, weight: 8 });
   });
 });

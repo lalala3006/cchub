@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
+import { message } from 'antd';
 import { todoApi } from '../api/todoApi';
+import { getErrorMessage } from '../api/types';
 import type { Todo, CreateTodoInput, UpdateTodoInput } from '../api/todoApi';
 import { TodoList } from '../components/Todo/TodoList';
 import { TodoForm } from '../components/Todo/TodoForm';
@@ -19,7 +21,7 @@ export function TodoPage() {
       const data = await todoApi.getAll();
       setTodos(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load todos');
+      setError(getErrorMessage(err, 'Failed to load todos'));
     } finally {
       setLoading(false);
     }
@@ -33,9 +35,9 @@ export function TodoPage() {
     try {
       await todoApi.create(data);
       setShowForm(false);
-      fetchTodos();
+      await fetchTodos();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to create');
+      message.error(getErrorMessage(err, 'Failed to create'));
     }
   };
 
@@ -45,9 +47,9 @@ export function TodoPage() {
       await todoApi.update(editingTodo.id, data);
       setEditingTodo(null);
       setShowForm(false);
-      fetchTodos();
+      await fetchTodos();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update');
+      message.error(getErrorMessage(err, 'Failed to update'));
     }
   };
 
@@ -55,9 +57,9 @@ export function TodoPage() {
     if (!confirm('Delete this task?')) return;
     try {
       await todoApi.delete(id);
-      fetchTodos();
+      await fetchTodos();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete');
+      message.error(getErrorMessage(err, 'Failed to delete'));
     }
   };
 
@@ -65,9 +67,9 @@ export function TodoPage() {
     const newStatus = todo.status === 'done' ? 'pending' : 'done';
     try {
       await todoApi.update(todo.id, { status: newStatus });
-      fetchTodos();
+      await fetchTodos();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update');
+      message.error(getErrorMessage(err, 'Failed to update'));
     }
   };
 

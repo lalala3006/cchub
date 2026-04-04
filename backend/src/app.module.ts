@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TodoModule } from './todo/todo.module';
 import { Todo } from './todo/todo.entity';
@@ -9,21 +10,25 @@ import { GithubToolModule } from './github-tool/github-tool.module';
 import { SystemConfigModule } from './system-config/system-config.module';
 import { SystemConfig } from './system-config/system-config.entity';
 import { LlmModule } from './llm/llm.module';
-
-const isProduction = process.env.NODE_ENV === 'production';
+import { AuthModule } from './auth/auth.module';
+import { UserAccount } from './auth/user.entity';
+import { getTypeOrmOptions } from './database/typeorm.config';
+import { AuthGuard } from './auth/auth.guard';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'better-sqlite3',
-      database: process.env.DATABASE_PATH || './database.sqlite',
-      entities: [Todo, GithubTool, CollectionRecord, FocusConfig, SystemConfig],
-      synchronize: !isProduction,
-    }),
+    TypeOrmModule.forRoot(getTypeOrmOptions([Todo, GithubTool, CollectionRecord, FocusConfig, SystemConfig, UserAccount])),
+    AuthModule,
     TodoModule,
     GithubToolModule,
     SystemConfigModule,
     LlmModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    },
   ],
 })
 export class AppModule {}

@@ -1,6 +1,5 @@
-node_modules
-dist
-*.spec.*
-*.test.*
-src/test/
-vitest.config.*
+node_modules/
+dist/
+*.log
+.env
+.env.*

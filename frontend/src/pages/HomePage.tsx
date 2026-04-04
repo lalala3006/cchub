@@ -1,27 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { SendOutlined, RobotOutlined, UserOutlined, LoadingOutlined } from '@ant-design/icons';
-import { githubToolsApi, API_BASE_URL } from '../api/githubToolsApi';
-import { todoApi } from '../api/todoApi';
+import { apiRequest } from '../api/client';
+import { getErrorMessage } from '../api/types';
+import { appendChatMessage, setChatError, setChatLoading, useChatStore } from '../features/chat/chatStore';
+import { buildConversationContext, buildLlmMessages } from '../features/chat/contextBuilder';
+import type { ChatMessage } from '../features/chat/chat.types';
 import styles from './HomePage.module.css';
 
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-}
-
 export function HomePage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: '你好！我是 ccHub 的 AI 助手。我可以帮你查询和管理你的 TODO、GitHub 工具收藏等信息。有什么我可以帮你的吗？',
-      timestamp: new Date(),
-    },
-  ]);
+  const messages = useChatStore((state) => state.messages);
+  const loading = useChatStore((state) => state.loading);
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,90 +20,50 @@ export function HomePage() {
   const handleSend = async () => {
     if (!input.trim() || loading) return;
 
-    const userMessage: Message = {
+    const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
       content: input.trim(),
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    appendChatMessage(userMessage);
     setInput('');
-    setLoading(true);
+    setChatLoading(true);
+    setChatError(null);
 
     try {
-      const context = await buildContext();
-      const response = await callLlm(userMessage.content, context);
+      const context = await buildConversationContext();
+      const response = await callLlm([...messages, userMessage], context);
 
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
+      appendChatMessage({
+        id: Date.now().toString(),
         role: 'assistant',
         content: response,
-        timestamp: new Date(),
-      }]);
+        timestamp: new Date().toISOString(),
+      });
     } catch (error) {
-      setMessages(prev => [...prev, {
+      setChatError(getErrorMessage(error, '请稍后重试'));
+      appendChatMessage({
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `抱歉，发生了错误：${error instanceof Error ? error.message : '请稍后重试'}`,
-        timestamp: new Date(),
-      }]);
+        content: `抱歉，发生了错误：${getErrorMessage(error, '请稍后重试')}`,
+        timestamp: new Date().toISOString(),
+      });
+    } finally {
+      setChatLoading(false);
     }
-
-    setLoading(false);
   };
 
-  const buildContext = async (): Promise<string> => {
-    let context = '你是一个助手。以下是用户的项目信息：\n\n';
-
-    try {
-      const todos = await todoApi.getAll();
-      if (todos.length > 0) {
-        context += '## TODO 列表\n';
-        todos.forEach((todo) => {
-          context += `- ${todo.title} ${todo.status === 'done' ? '[已完成]' : '[未完成]'}\n`;
-        });
-        context += '\n';
-      }
-    } catch {
-      // Ignore context fetch failures so the assistant can still answer.
-    }
-
-    try {
-      const collection = await githubToolsApi.getCollection('deep_use', '');
-      if (collection.length > 0) {
-        context += '## 深度使用的 GitHub 工具\n';
-        collection.forEach((record) => {
-          const tool = record.tool;
-          context += `- ${tool.name}: ${tool.description || '无描述'}\n`;
-        });
-        context += '\n';
-      }
-    } catch {
-      // Ignore context fetch failures so the assistant can still answer.
-    }
-
-    return context;
-  };
-
-  const callLlm = async (userInput: string, context: string): Promise<string> => {
-    const fullPrompt = `${context}\n\n用户问题: ${userInput}`;
-
-    const response = await fetch(`${API_BASE_URL}/llm/chat`, {
+  const callLlm = async (currentMessages: ChatMessage[], context: Awaited<ReturnType<typeof buildConversationContext>>): Promise<string> => {
+    const response = await apiRequest<{ reply?: string }>('/llm/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        messages: [{ role: 'user', content: fullPrompt }],
+        messages: buildLlmMessages(currentMessages, context),
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API error: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-    return data.reply || '抱歉，没有得到有效回复。';
+    return response.reply || '抱歉，没有得到有效回复。';
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -141,7 +90,7 @@ export function HomePage() {
               <div className={styles.messageContent}>
                 <div className={styles.messageText}>{msg.content}</div>
                 <div className={styles.messageTime}>
-                  {msg.timestamp.toLocaleTimeString()}
+                  {new Date(msg.timestamp).toLocaleTimeString()}
                 </div>
               </div>
             </div>

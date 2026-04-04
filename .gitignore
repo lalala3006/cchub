@@ -16,5 +16,11 @@ frontend/dist/
 
 backend/database.sqlite
 
+*.log
+.env
+.env.*
+
 backend/tsconfig.tsbuildinfo
 frontend/tsconfig.tsbuildinfo
+
+specs/

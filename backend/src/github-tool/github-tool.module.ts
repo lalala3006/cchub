@@ -8,6 +8,9 @@ import { GithubTool } from './entities/github-tool.entity';
 import { CollectionRecord } from './entities/collection-record.entity';
 import { FocusConfig } from './entities/focus-config.entity';
 import { LlmModule } from '../llm/llm.module';
+import { GithubFeedService } from './services/github-feed.service';
+import { GithubWorkflowService } from './services/github-workflow.service';
+import { GithubConfigService } from './services/github-config.service';
 
 @Module({
   imports: [
@@ -16,7 +19,13 @@ import { LlmModule } from '../llm/llm.module';
     LlmModule,
   ],
   controllers: [GithubToolController],
-  providers: [GithubToolService, GithubFetcherService],
+  providers: [
+    GithubToolService,
+    GithubFetcherService,
+    GithubFeedService,
+    GithubWorkflowService,
+    GithubConfigService,
+  ],
   exports: [GithubToolService, GithubFetcherService],
 })
 export class GithubToolModule {}

@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
+import { apiRequest, apiRequestVoid, API_BASE_URL } from './client';
 
 export interface Todo {
   id: number;
@@ -24,54 +24,34 @@ export interface UpdateTodoInput {
   status?: 'pending' | 'in_progress' | 'done';
 }
 
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Request failed' }));
-    throw new Error(error.message || `HTTP error ${response.status}`);
-  }
-  return response.json();
-}
-
 export const todoApi = {
   async getAll(): Promise<Todo[]> {
-    const response = await fetch(`${API_BASE_URL}/todos`);
-    return handleResponse(response);
+    return apiRequest<Todo[]>('/todos');
   },
 
   async getById(id: number): Promise<Todo> {
-    const response = await fetch(`${API_BASE_URL}/todos/${id}`);
-    return handleResponse(response);
+    return apiRequest<Todo>(`/todos/${id}`);
   },
 
   async create(data: CreateTodoInput): Promise<Todo> {
-    const response = await fetch(`${API_BASE_URL}/todos`, {
+    return apiRequest<Todo>('/todos', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(data),
     });
-    return handleResponse(response);
   },
 
   async update(id: number, data: UpdateTodoInput): Promise<Todo> {
-    const response = await fetch(`${API_BASE_URL}/todos/${id}`, {
+    return apiRequest<Todo>(`/todos/${id}`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(data),
     });
-    return handleResponse(response);
   },
 
   async delete(id: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/todos/${id}`, {
+    await apiRequestVoid(`/todos/${id}`, {
       method: 'DELETE',
     });
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Delete failed' }));
-      throw new Error(error.message || `HTTP error ${response.status}`);
-    }
   },
 };
+
+export { API_BASE_URL };

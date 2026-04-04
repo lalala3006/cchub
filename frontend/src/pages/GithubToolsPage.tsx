@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Spin, message, Button } from 'antd';
 import { ReloadOutlined, SettingOutlined } from '@ant-design/icons';
+import { getErrorMessage } from '../api/types';
 import type { GithubTool, CollectionRecord, CollectionStatus } from '../api/githubToolsApi';
 import { githubToolsApi } from '../api/githubToolsApi';
 import { ToolCard } from '../components/GithubTools/ToolCard';
@@ -28,8 +29,8 @@ export function GithubToolsPage() {
     try {
       const data = await githubToolsApi.getFeed();
       setFeed(data);
-    } catch {
-      message.error('加载推荐失败');
+    } catch (error) {
+      message.error(getErrorMessage(error, '加载推荐失败'));
     } finally {
       setLoading(false);
     }
@@ -40,8 +41,8 @@ export function GithubToolsPage() {
     try {
       const data = await githubToolsApi.getCollection(activeTab, search || undefined);
       setCollection(data);
-    } catch {
-      message.error('加载收藏失败');
+    } catch (error) {
+      message.error(getErrorMessage(error, '加载收藏失败'));
     } finally {
       setLoading(false);
     }
@@ -66,8 +67,8 @@ export function GithubToolsPage() {
       } else {
         await loadFeed();
       }
-    } catch {
-      message.error('操作失败');
+    } catch (error) {
+      message.error(getErrorMessage(error, '操作失败'));
     }
   };
 
@@ -76,8 +77,8 @@ export function GithubToolsPage() {
       await githubToolsApi.hideTool(toolId);
       message.success('已隐藏');
       await loadFeed();
-    } catch {
-      message.error('操作失败');
+    } catch (error) {
+      message.error(getErrorMessage(error, '操作失败'));
     }
   };
 
@@ -86,8 +87,8 @@ export function GithubToolsPage() {
       await githubToolsApi.updateStatus(toolId, status);
       message.success('状态已更新');
       await loadCollection();
-    } catch {
-      message.error('操作失败');
+    } catch (error) {
+      message.error(getErrorMessage(error, '操作失败'));
     }
   };
 
@@ -96,8 +97,8 @@ export function GithubToolsPage() {
     try {
       await githubToolsApi.triggerFetch();
       message.success('已触发抓取，请稍后刷新查看新项目');
-    } catch {
-      message.error('触发抓取失败');
+    } catch (error) {
+      message.error(getErrorMessage(error, '触发抓取失败'));
     } finally {
       setFetching(false);
     }

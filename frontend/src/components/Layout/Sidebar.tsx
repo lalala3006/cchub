@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { GithubOutlined, HomeOutlined, SettingOutlined } from '@ant-design/icons';
 import styles from './Layout.module.css';
+import { clearAuthenticatedSession, useAuthStore } from '../../features/auth/authStore';
 
 const navItems = [
   {
@@ -26,6 +27,8 @@ const navItems = [
 ];
 
 export function Sidebar() {
+  const user = useAuthStore((state) => state.user);
+
   return (
     <aside className={styles.sidebar}>
       <div className={styles.sidebarHeader}>
@@ -57,6 +60,16 @@ export function Sidebar() {
       </nav>
 
       <div className={styles.sidebarFooter}>
+        <div className={styles.userCard}>
+          <div className={styles.userName}>{user?.displayName || user?.username}</div>
+          <button
+            type="button"
+            className={styles.logoutButton}
+            onClick={() => clearAuthenticatedSession()}
+          >
+            退出登录
+          </button>
+        </div>
         <NavLink to="/settings" className={({ isActive }) => `${styles.settingsLink} ${isActive ? styles.settingsLinkActive : ''}`}>
           <SettingOutlined />
           <span>设置</span>

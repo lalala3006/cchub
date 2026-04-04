@@ -178,6 +178,34 @@
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.userCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: 0 var(--space-md) var(--space-md);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+}
+
+.userName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logoutButton {
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.logoutButton:hover {
+  color: rgba(255, 255, 255, 0.95);
+}
+
 .settingsLink {
   display: flex;
   align-items: center;
