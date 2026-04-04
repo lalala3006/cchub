@@ -4,6 +4,7 @@ import { GithubToolService } from './github-tool.service';
 import { GithubFetcherService } from './github-fetcher.service';
 import { CollectionStatus } from './entities/collection-record.entity';
 import { CreateFocusConfigDto } from './dto/create-focus-config.dto';
+import { UpdateFocusConfigDto } from './dto/update-focus-config.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 
 describe('GithubToolController', () => {
@@ -189,8 +190,9 @@ describe('GithubToolController', () => {
   describe('updateConfig', () => {
     it('should call service.updateConfig with id and weight', async () => {
       service.updateConfig.mockResolvedValue(mockConfig);
+      const dto: UpdateFocusConfigDto = { weight: 8 };
 
-      const result = await controller.updateConfig(1, 8);
+      const result = await controller.updateConfig(1, dto);
 
       expect(service.updateConfig).toHaveBeenCalledWith(1, 8);
       expect(result).toEqual(mockConfig);
@@ -248,6 +250,15 @@ describe('DTO Validation', () => {
         dto.status = status;
         expect(Object.values(CollectionStatus)).toContain(dto.status);
       }
+    });
+  });
+
+  describe('UpdateFocusConfigDto', () => {
+    it('BD-006: should accept weight in valid range', () => {
+      const dto = new UpdateFocusConfigDto();
+      dto.weight = 8;
+      expect(dto.weight).toBeGreaterThanOrEqual(1);
+      expect(dto.weight).toBeLessThanOrEqual(10);
     });
   });
 });

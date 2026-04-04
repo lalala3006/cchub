@@ -18,6 +18,11 @@ interface ToolCardProps {
 export function ToolCard({ tool, mode, onKeep, onHide, onStatusChange }: ToolCardProps) {
   const actualTool = 'tool' in tool ? tool.tool : tool;
   const status = 'status' in tool ? tool.status : undefined;
+  const handleActionClick = (event: React.MouseEvent<HTMLButtonElement>, action: () => void) => {
+    event.preventDefault();
+    event.stopPropagation();
+    action();
+  };
 
   const statusLabels: Record<CollectionStatus, string> = {
     unread: '未读',
@@ -67,13 +72,13 @@ export function ToolCard({ tool, mode, onKeep, onHide, onStatusChange }: ToolCar
             <div className={styles.actions}>
               <button
                 className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}
-                onClick={() => onKeep?.(actualTool.id)}
+                onClick={(event) => handleActionClick(event, () => onKeep?.(actualTool.id))}
               >
                 保留
               </button>
               <button
                 className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
-                onClick={() => onHide?.(actualTool.id)}
+                onClick={(event) => handleActionClick(event, () => onHide?.(actualTool.id))}
               >
                 不感兴趣
               </button>
@@ -83,7 +88,7 @@ export function ToolCard({ tool, mode, onKeep, onHide, onStatusChange }: ToolCar
             <div className={styles.actions}>
               <button
                 className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}
-                onClick={() => onStatusChange?.(actualTool.id, nextStatusMap[status]!)}
+                onClick={(event) => handleActionClick(event, () => onStatusChange?.(actualTool.id, nextStatusMap[status]!))}
               >
                 标记为{statusLabels[nextStatusMap[status]!]}
               </button>

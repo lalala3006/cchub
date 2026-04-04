@@ -10,13 +10,15 @@ import { SystemConfigModule } from './system-config/system-config.module';
 import { SystemConfig } from './system-config/system-config.entity';
 import { LlmModule } from './llm/llm.module';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',
       database: process.env.DATABASE_PATH || './database.sqlite',
       entities: [Todo, GithubTool, CollectionRecord, FocusConfig, SystemConfig],
-      synchronize: true,
+      synchronize: !isProduction,
     }),
     TodoModule,
     GithubToolModule,

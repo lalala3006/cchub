@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Form, Input, Button, message } from 'antd';
 import { systemConfigApi } from '../../api/systemConfigApi';
 import styles from './LlmConfig.module.css';
@@ -16,30 +16,41 @@ interface LlmConfigProps {
 export const LlmConfig: React.FC<LlmConfigProps> = ({ fullPage = false }) => {
   const [collapsed, setCollapsed] = useState(!fullPage);
   const [loading, setLoading] = useState(false);
+  const [apiKeyPlaceholder, setApiKeyPlaceholder] = useState('sk-...');
   const [form] = Form.useForm();
+
+  const loadConfig = useCallback(async () => {
+    try {
+      const config = await systemConfigApi.getLlmConfig();
+      setApiKeyPlaceholder(config.apiKey || 'sk-...');
+      form.setFieldsValue({
+        ...config,
+        apiKey: '',
+      });
+    } catch {
+      message.error('加载配置失败，请刷新页面重试');
+    }
+  }, [form]);
 
   useEffect(() => {
     if (!collapsed || fullPage) {
-      loadConfig();
+      void loadConfig();
     }
-  }, [fullPage]);
-
-  const loadConfig = async () => {
-    try {
-      const config = await systemConfigApi.getLlmConfig();
-      form.setFieldsValue(config);
-    } catch (error) {
-      message.error('加载配置失败，请刷新页面重试');
-    }
-  };
+  }, [collapsed, fullPage, loadConfig]);
 
   const handleSave = async (values: LlmConfigForm) => {
     setLoading(true);
     try {
-      await systemConfigApi.updateLlmConfig(values);
+      await systemConfigApi.updateLlmConfig({
+        apiUrl: values.apiUrl,
+        model: values.model,
+        ...(values.apiKey.trim() ? { apiKey: values.apiKey.trim() } : {}),
+      });
       message.success('配置已保存');
+      form.setFieldValue('apiKey', '');
+      await loadConfig();
       if (!fullPage) setCollapsed(true);
-    } catch (error) {
+    } catch {
       message.error('保存失败');
     } finally {
       setLoading(false);
@@ -65,7 +76,7 @@ export const LlmConfig: React.FC<LlmConfigProps> = ({ fullPage = false }) => {
           <Input placeholder="https://api.openai.com/v1" />
         </Form.Item>
         <Form.Item name="apiKey" label="API Key">
-          <Input.Password placeholder="sk-..." />
+          <Input.Password placeholder={apiKeyPlaceholder} />
         </Form.Item>
         <Form.Item name="model" label="模型">
           <Input placeholder="gpt-4o" />
@@ -100,7 +111,7 @@ export const LlmConfig: React.FC<LlmConfigProps> = ({ fullPage = false }) => {
             <Input placeholder="https://api.openai.com/v1" />
           </Form.Item>
           <Form.Item name="apiKey" label="API Key">
-            <Input.Password placeholder="sk-..." />
+            <Input.Password placeholder={apiKeyPlaceholder} />
           </Form.Item>
           <Form.Item name="model" label="模型">
             <Input placeholder="gpt-4o" />

@@ -6,19 +6,31 @@ interface LlmConfig {
   model: string;
 }
 
+async function handleResponse<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: `HTTP ${response.status}` }));
+    throw new Error(error.message || `HTTP ${response.status}`);
+  }
+  return response.json();
+}
+
+async function handleVoidResponse(response: Response): Promise<void> {
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: `HTTP ${response.status}` }));
+    throw new Error(error.message || `HTTP ${response.status}`);
+  }
+}
+
 export const systemConfigApi = {
   async getLlmConfig(): Promise<LlmConfig> {
-    const res = await fetch(`${API_BASE_URL}/system-config/llm`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    return handleResponse(await fetch(`${API_BASE_URL}/system-config/llm`));
   },
 
   async updateLlmConfig(config: Partial<LlmConfig>): Promise<void> {
-    const res = await fetch(`${API_BASE_URL}/system-config/llm`, {
+    await handleVoidResponse(await fetch(`${API_BASE_URL}/system-config/llm`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(config),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    }));
   },
 };

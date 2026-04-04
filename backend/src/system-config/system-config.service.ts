@@ -41,11 +41,13 @@ export class SystemConfigService {
 
   async updateLlmConfig(updates: { apiUrl?: string; apiKey?: string; model?: string }): Promise<{ apiUrl: string; apiKey: string; model: string }> {
     const configsToUpsert: Partial<SystemConfig>[] = [];
+    const currentConfig = await this.getRawLlmConfig();
+    const maskedCurrentApiKey = this.maskApiKey(currentConfig.apiKey);
 
     if (updates.apiUrl !== undefined) {
       configsToUpsert.push({ key: 'llm_api_url', value: updates.apiUrl, category: 'llm' });
     }
-    if (updates.apiKey !== undefined) {
+    if (updates.apiKey !== undefined && updates.apiKey !== '' && updates.apiKey !== maskedCurrentApiKey) {
       configsToUpsert.push({ key: 'llm_api_key', value: updates.apiKey, category: 'llm' });
     }
     if (updates.model !== undefined) {
@@ -53,7 +55,9 @@ export class SystemConfigService {
     }
 
     // TypeORM's upsert() supports batch operations natively
-    await this.configRepo.upsert(configsToUpsert, ['key']);
+    if (configsToUpsert.length > 0) {
+      await this.configRepo.upsert(configsToUpsert, ['key']);
+    }
 
     return this.getLlmConfig();
   }

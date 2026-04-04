@@ -19,6 +19,23 @@ interface LlmConfig {
   model: string;
 }
 
+interface AnthropicContentBlock {
+  type: string;
+  text?: string;
+}
+
+interface AnthropicResponse {
+  content?: AnthropicContentBlock[];
+}
+
+interface OpenAiResponse {
+  choices?: Array<{
+    message?: {
+      content?: string;
+    };
+  }>;
+}
+
 @Injectable()
 export class LlmService {
   constructor(
@@ -26,7 +43,7 @@ export class LlmService {
   ) {}
 
   async chat(messages: ChatMessage[]): Promise<string> {
-    const config = await this.systemConfigService.getRawLlmConfig();
+    const config: LlmConfig = await this.systemConfigService.getRawLlmConfig();
 
     // 判断是 Anthropic 格式还是 OpenAI 格式
     const isAnthropicFormat = config.apiUrl.includes('anthropic');
@@ -82,14 +99,14 @@ export class LlmService {
       throw new Error(`LLM API 调用失败: ${response.status} - ${errorText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as AnthropicResponse | OpenAiResponse;
 
     // 解析响应
     if (isAnthropicFormat) {
-      const textBlock = data.content?.find((block: any) => block.type === 'text');
+      const textBlock = (data as AnthropicResponse).content?.find((block) => block.type === 'text');
       return textBlock?.text || '抱歉，没有得到有效回复。';
     } else {
-      return data.choices?.[0]?.message?.content || '抱歉，没有得到有效回复。';
+      return (data as OpenAiResponse).choices?.[0]?.message?.content || '抱歉，没有得到有效回复。';
     }
   }
 

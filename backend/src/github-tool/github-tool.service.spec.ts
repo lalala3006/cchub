@@ -1,12 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder, Not, LessThan } from 'typeorm';
+import { Repository, SelectQueryBuilder, Not } from 'typeorm';
 import { GithubToolService } from './github-tool.service';
 import { GithubTool } from './entities/github-tool.entity';
 import { CollectionRecord, CollectionStatus } from './entities/collection-record.entity';
 import { FocusConfig } from './entities/focus-config.entity';
 import { CreateFocusConfigDto } from './dto/create-focus-config.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
+import { NotFoundException } from '@nestjs/common';
 
 describe('GithubToolService', () => {
   let service: GithubToolService;
@@ -48,6 +49,7 @@ describe('GithubToolService', () => {
 
   const createMockQueryBuilder = () => {
     const mockQb = {
+      innerJoinAndSelect: jest.fn().mockReturnThis(),
       leftJoinAndSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
@@ -119,33 +121,19 @@ describe('GithubToolService', () => {
   });
 
   describe('getFeed', () => {
-    it('BS-001: should return unhidden tools limited to 10 sorted by time', async () => {
+    it('BS-001: should return unread visible tools limited to 10 sorted by time', async () => {
       const mockQb = createMockQueryBuilder();
       toolRepo.createQueryBuilder.mockReturnValue(mockQb);
-      recordRepo.find.mockResolvedValue([{ toolId: 1, isHidden: true } as CollectionRecord]);
 
       const result = await service.getFeed();
 
-      expect(recordRepo.find).toHaveBeenCalledWith({
-        where: { isHidden: true },
-        select: ['toolId'],
-      });
       expect(toolRepo.createQueryBuilder).toHaveBeenCalledWith('tool');
-      expect(mockQb.leftJoinAndSelect).toHaveBeenCalledWith('tool.collectionRecord', 'record');
+      expect(mockQb.innerJoinAndSelect).toHaveBeenCalledWith('tool.collectionRecord', 'record');
+      expect(mockQb.where).toHaveBeenCalledWith('record.isHidden = :hidden', { hidden: false });
+      expect(mockQb.andWhere).toHaveBeenCalledWith('record.status = :status', { status: CollectionStatus.UNREAD });
       expect(mockQb.orderBy).toHaveBeenCalledWith('tool.createdAt', 'DESC');
       expect(mockQb.take).toHaveBeenCalledWith(10);
-      expect(mockQb.where).toHaveBeenCalled();
       expect(result).toEqual([mockTool]);
-    });
-
-    it('should exclude hidden tools from feed', async () => {
-      const mockQb = createMockQueryBuilder();
-      toolRepo.createQueryBuilder.mockReturnValue(mockQb);
-      recordRepo.find.mockResolvedValue([{ toolId: 999, isHidden: true } as CollectionRecord]);
-
-      await service.getFeed();
-
-      expect(mockQb.where).toHaveBeenCalledWith('tool.id NOT IN (:...hiddenIds)', { hiddenIds: [999] });
     });
   });
 
@@ -256,7 +244,7 @@ describe('GithubToolService', () => {
       recordRepo.findOne.mockResolvedValue(null);
       const dto: UpdateStatusDto = { status: CollectionStatus.PRACTICED };
 
-      await expect(service.updateStatus(999, dto)).rejects.toThrow('Record not found');
+      await expect(service.updateStatus(999, dto)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -290,6 +278,13 @@ describe('GithubToolService', () => {
       expect(configRepo.update).toHaveBeenCalledWith(1, { weight: 8 });
       expect(configRepo.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
       expect(result.weight).toBe(8);
+    });
+
+    it('should throw when updated config is missing', async () => {
+      configRepo.update.mockResolvedValue({ affected: 0, raw: [], generatedMaps: [] });
+      configRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.updateConfig(999, 8)).rejects.toThrow(NotFoundException);
     });
 
     it('BS-013: getConfig should return configs ordered by weight desc', async () => {

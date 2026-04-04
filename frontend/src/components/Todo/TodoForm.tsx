@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Todo, CreateTodoInput, UpdateTodoInput } from '../../api/todoApi';
 import styles from './Todo.module.css';
 
@@ -9,24 +9,10 @@ interface TodoFormProps {
 }
 
 export function TodoForm({ todo, onSubmit, onCancel }: TodoFormProps) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
-  const [status, setStatus] = useState<'pending' | 'in_progress' | 'done'>('pending');
-
-  useEffect(() => {
-    if (todo) {
-      setTitle(todo.title);
-      setDescription(todo.description || '');
-      setPriority(todo.priority);
-      setStatus(todo.status);
-    } else {
-      setTitle('');
-      setDescription('');
-      setPriority('medium');
-      setStatus('pending');
-    }
-  }, [todo]);
+  const [title, setTitle] = useState(todo?.title ?? '');
+  const [description, setDescription] = useState(todo?.description || '');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>(todo?.priority ?? 'medium');
+  const [status, setStatus] = useState<'pending' | 'in_progress' | 'done'>(todo?.status ?? 'pending');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cron } from '@nestjs/schedule';
 import { GithubTool } from './entities/github-tool.entity';
-import { CollectionRecord } from './entities/collection-record.entity';
+import { CollectionRecord, CollectionStatus } from './entities/collection-record.entity';
 import { FocusConfig } from './entities/focus-config.entity';
 
 interface GithubSearchItem {
@@ -225,7 +225,7 @@ export class GithubFetcherService {
     // 创建收藏记录
     const record = new CollectionRecord();
     record.toolId = saved.id;
-    record.status = 'unread' as any;
+    record.status = CollectionStatus.UNREAD;
     record.isHidden = false;
     record.statusChangedAt = new Date();
     await this.recordRepo.save(record);

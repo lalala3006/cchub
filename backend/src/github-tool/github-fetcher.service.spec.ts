@@ -183,8 +183,11 @@ describe('GithubFetcherService', () => {
 
       // Mock fetchByKeyword to return a tool directly
       jest.spyOn(service as any, 'fetchByKeyword').mockResolvedValue([mockTool]);
-      // Mock fetchFavicon to prevent actual HTTP call
-      jest.spyOn(service as any, 'fetchFavicon').mockResolvedValue('https://github.com/favicon.ico');
+      // Mock README metadata fetch to prevent additional HTTP calls
+      jest.spyOn(service as any, 'fetchReadmeInfo').mockResolvedValue({
+        title: 'test-tool',
+        logoUrl: 'https://github.com/favicon.ico',
+      });
 
       await service.fetchAndSaveTools();
 

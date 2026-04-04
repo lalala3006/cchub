@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Spin, message, Button } from 'antd';
 import { ReloadOutlined, SettingOutlined } from '@ant-design/icons';
 import type { GithubTool, CollectionRecord, CollectionStatus } from '../api/githubToolsApi';
@@ -21,16 +21,9 @@ export function GithubToolsPage() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [configModalOpen, setConfigModalOpen] = useState(false);
+  const showCollection = activeTab === 'practiced' || activeTab === 'deep_use';
 
-  useEffect(() => {
-    loadFeed();
-  }, []);
-
-  useEffect(() => {
-    loadCollection();
-  }, [activeTab, search]);
-
-  const loadFeed = async () => {
+  const loadFeed = useCallback(async () => {
     setLoading(true);
     try {
       const data = await githubToolsApi.getFeed();
@@ -40,9 +33,9 @@ export function GithubToolsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadCollection = async () => {
+  const loadCollection = useCallback(async () => {
     setLoading(true);
     try {
       const data = await githubToolsApi.getCollection(activeTab, search || undefined);
@@ -52,14 +45,27 @@ export function GithubToolsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, search]);
+
+  useEffect(() => {
+    void loadFeed();
+  }, [loadFeed]);
+
+  useEffect(() => {
+    if (showCollection) {
+      void loadCollection();
+    }
+  }, [loadCollection, showCollection]);
 
   const handleKeep = async (toolId: number) => {
     try {
       await githubToolsApi.keepTool(toolId);
       message.success('已保留');
-      loadFeed();
-      loadCollection();
+      if (showCollection) {
+        await Promise.all([loadFeed(), loadCollection()]);
+      } else {
+        await loadFeed();
+      }
     } catch {
       message.error('操作失败');
     }
@@ -69,7 +75,7 @@ export function GithubToolsPage() {
     try {
       await githubToolsApi.hideTool(toolId);
       message.success('已隐藏');
-      loadFeed();
+      await loadFeed();
     } catch {
       message.error('操作失败');
     }
@@ -79,7 +85,7 @@ export function GithubToolsPage() {
     try {
       await githubToolsApi.updateStatus(toolId, status);
       message.success('状态已更新');
-      loadCollection();
+      await loadCollection();
     } catch {
       message.error('操作失败');
     }
@@ -96,8 +102,6 @@ export function GithubToolsPage() {
       setFetching(false);
     }
   };
-
-  const showCollection = activeTab === 'practiced' || activeTab === 'deep_use';
 
   return (
     <div className={styles.page}>
@@ -164,6 +168,11 @@ export function GithubToolsPage() {
               onHide={handleHide}
             />
           ))}
+          {activeTab === 'unread' && feed.length === 0 && (
+            <div className={styles.empty}>
+              <p>暂无推荐项目</p>
+            </div>
+          )}
           {showCollection && collection.map((record) => (
             <ToolCard
               key={record.id}

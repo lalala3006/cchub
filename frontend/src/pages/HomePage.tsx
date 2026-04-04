@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { SendOutlined, RobotOutlined, UserOutlined, LoadingOutlined } from '@ant-design/icons';
-import { githubToolsApi } from '../api/githubToolsApi';
-import { API_BASE_URL } from '../api/githubToolsApi';
+import { githubToolsApi, API_BASE_URL } from '../api/githubToolsApi';
+import { todoApi } from '../api/todoApi';
 import styles from './HomePage.module.css';
 
 interface Message {
@@ -44,7 +44,7 @@ export function HomePage() {
 
     try {
       const context = await buildContext();
-      const response = await callLlm(input.trim(), context);
+      const response = await callLlm(userMessage.content, context);
 
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
@@ -68,27 +68,31 @@ export function HomePage() {
     let context = '你是一个助手。以下是用户的项目信息：\n\n';
 
     try {
-      const todos = await fetch(`${API_BASE_URL}/todos`).then(r => r.json()).catch(() => []);
+      const todos = await todoApi.getAll();
       if (todos.length > 0) {
         context += '## TODO 列表\n';
-        todos.forEach((todo: any) => {
-          context += `- ${todo.title} ${todo.completed ? '[已完成]' : '[未完成]'}\n`;
+        todos.forEach((todo) => {
+          context += `- ${todo.title} ${todo.status === 'done' ? '[已完成]' : '[未完成]'}\n`;
         });
         context += '\n';
       }
-    } catch {}
+    } catch {
+      // Ignore context fetch failures so the assistant can still answer.
+    }
 
     try {
       const collection = await githubToolsApi.getCollection('deep_use', '');
       if (collection.length > 0) {
         context += '## 深度使用的 GitHub 工具\n';
-        collection.forEach((record: any) => {
+        collection.forEach((record) => {
           const tool = record.tool;
           context += `- ${tool.name}: ${tool.description || '无描述'}\n`;
         });
         context += '\n';
       }
-    } catch {}
+    } catch {
+      // Ignore context fetch failures so the assistant can still answer.
+    }
 
     return context;
   };

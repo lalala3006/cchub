@@ -2,6 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, Query, ParseIntPipe 
 import { GithubToolService } from './github-tool.service';
 import { GithubFetcherService } from './github-fetcher.service';
 import { CreateFocusConfigDto } from './dto/create-focus-config.dto';
+import { UpdateFocusConfigDto } from './dto/update-focus-config.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { CollectionStatus } from './entities/collection-record.entity';
 
@@ -58,7 +59,7 @@ export class GithubToolController {
   }
 
   @Patch('config/:id')
-  updateConfig(@Param('id', ParseIntPipe) id: number, @Body('weight') weight: number) {
-    return this.service.updateConfig(id, weight);
+  updateConfig(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateFocusConfigDto) {
+    return this.service.updateConfig(id, dto.weight);
   }
 }

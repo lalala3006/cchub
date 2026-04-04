@@ -116,6 +116,7 @@ export function TodoPage() {
 
       {showForm && (
         <TodoForm
+          key={editingTodo?.id ?? 'new'}
           todo={editingTodo}
           onSubmit={handleSubmit}
           onCancel={handleCancel}

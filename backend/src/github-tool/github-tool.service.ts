@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not, LessThan } from 'typeorm';
 import { GithubTool } from './entities/github-tool.entity';
@@ -17,19 +17,13 @@ export class GithubToolService {
 
   // Feed: 本周推荐（去重、排除已隐藏）
   async getFeed(): Promise<GithubTool[]> {
-    const hiddenToolIds = await this.recordRepo.find({ where: { isHidden: true }, select: ['toolId'] });
-    const hiddenIds = hiddenToolIds.map(r => r.toolId);
-
-    const query = this.toolRepo.createQueryBuilder('tool')
-      .leftJoinAndSelect('tool.collectionRecord', 'record')
+    return this.toolRepo.createQueryBuilder('tool')
+      .innerJoinAndSelect('tool.collectionRecord', 'record')
+      .where('record.isHidden = :hidden', { hidden: false })
+      .andWhere('record.status = :status', { status: CollectionStatus.UNREAD })
       .orderBy('tool.createdAt', 'DESC')
-      .take(10);
-
-    if (hiddenIds.length > 0) {
-      query.where('tool.id NOT IN (:...hiddenIds)', { hiddenIds });
-    }
-
-    return query.getMany();
+      .take(10)
+      .getMany();
   }
 
   // 按状态查询收藏
@@ -78,7 +72,7 @@ export class GithubToolService {
   async updateStatus(toolId: number, dto: UpdateStatusDto): Promise<CollectionRecord> {
     const record = await this.recordRepo.findOne({ where: { toolId } });
     if (!record) {
-      throw new Error('Record not found');
+      throw new NotFoundException(`Collection record for tool ${toolId} not found`);
     }
     record.status = dto.status;
     record.statusChangedAt = new Date();
@@ -101,7 +95,11 @@ export class GithubToolService {
 
   async updateConfig(id: number, weight: number): Promise<FocusConfig> {
     await this.configRepo.update(id, { weight });
-    return this.configRepo.findOne({ where: { id } });
+    const config = await this.configRepo.findOne({ where: { id } });
+    if (!config) {
+      throw new NotFoundException(`Focus config ${id} not found`);
+    }
+    return config;
   }
 
   // 清理超过半年的记录
