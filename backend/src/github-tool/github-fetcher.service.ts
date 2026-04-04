@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { GithubTool } from './entities/github-tool.entity';
 import { CollectionRecord } from './entities/collection-record.entity';
 import { FocusConfig } from './entities/focus-config.entity';
@@ -12,6 +12,11 @@ interface GithubSearchItem {
   description: string;
   stargazers_count: number;
   language: string;
+}
+
+interface GithubReadmeResponse {
+  content: string; // base64 encoded
+  encoding: string;
 }
 
 @Injectable()
@@ -97,39 +102,104 @@ export class GithubFetcherService {
     return tool;
   }
 
-  private async fetchFavicon(owner: string, repo: string): Promise<string> {
+  private async fetchReadmeInfo(owner: string, repo: string): Promise<{ title: string; logoUrl: string | null }> {
     try {
-      const url = `https://github.com/${owner}/${repo}`;
-      const response = await fetch(url);
-      const html = await response.text();
+      // 使用 GitHub API 获取 README
+      const url = `https://api.github.com/repos/${owner}/${repo}/readme`;
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'ccHub-GitHub-Tools',
+          'Accept': 'application/vnd.github.v3+json',
+        },
+      });
 
-      // 匹配 <link rel="icon" href="..."> 或 <link rel="shortcut icon" href="...">
-      const match = html.match(/<link\s+(?:rel="(?:icon|shortcut icon)"\s+)?href="([^"]+)"/i);
-      if (match) {
-        let favicon = match[1];
-        if (favicon.startsWith('/')) {
-          favicon = 'https://github.com' + favicon;
-        }
-        // 验证 URL 安全性
-        if (this.isValidFaviconUrl(favicon)) {
-          return favicon;
+      if (!response.ok) {
+        return { title: repo, logoUrl: null };
+      }
+
+      const data = await response.json() as GithubReadmeResponse;
+
+      // 解码 base64
+      const content = Buffer.from(data.content.replace(/\n/g, ''), 'base64').toString('utf-8');
+
+      // 提取标题 (第一个 # 标题，只取纯文本)
+      let title = repo;
+      const titleMatch = content.match(/^#\s+(.+)$/m);
+      if (titleMatch) {
+        // 去掉标题中的 Markdown 语法（图片、链接等）
+        let titleText = titleMatch[1].trim();
+        titleText = titleText.replace(/!\[([^\]]*)\]\([^)]+\)/g, ''); // 移除图片
+        titleText = titleText.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1'); // 链接转为文本
+        titleText = titleText.replace(/[`*_~]/g, ''); // 移除行内代码标记
+        titleText = titleText.replace(/<[^>]+>/g, ''); // 移除 HTML 标签
+        titleText = titleText.trim();
+        if (titleText) {
+          title = titleText;
         }
       }
+
+      // 提取 Logo (跳过徽章图片和 GitHub Actions)
+      const logoUrl = this.extractLogoUrl(content, owner, repo);
+
+      return { title, logoUrl };
     } catch (error) {
-      this.logger.warn(`Failed to fetch favicon for ${owner}/${repo}:`, error);
+      this.logger.warn(`Failed to fetch README for ${owner}/${repo}:`, error);
+      return { title: repo, logoUrl: null };
     }
-    // 默认返回 GitHub favicon
-    return 'https://github.com/favicon.ico';
   }
 
-  private isValidFaviconUrl(url: string): boolean {
+  private extractLogoUrl(content: string, owner: string, repo: string): string | null {
+    // 徽章域名列表 (这些不是项目 logo)
+    const badgeDomains = ['shields.io', 'badge.fury.io', 'badgen.net', 'img.shields.io', 'nodei.co'];
+    // 跳过 GitHub Actions 的 badge
+    const skipPaths = ['/actions/', '/workflows/', 'actions/workflows', 'github.com/actions'];
+
+    // 查找所有图片
+    const imageMatches = [...content.matchAll(/!\[([^\]]*)\]\(([^)]+)\)/g)];
+
+    for (const match of imageMatches) {
+      const altText = match[1].toLowerCase();
+      let url = match[2];
+
+      // 跳过徽章
+      if (badgeDomains.some(domain => url.includes(domain))) {
+        continue;
+      }
+
+      // 跳过 GitHub Actions badge
+      if (skipPaths.some(path => url.includes(path))) {
+        continue;
+      }
+
+      // 处理相对路径
+      if (url.startsWith('./')) {
+        url = `https://raw.githubusercontent.com/${owner}/${repo}/main/${url.slice(2)}`;
+      } else if (url.startsWith('http://')) {
+        url = url.replace('http://', 'https://');
+      }
+
+      // 验证 URL
+      if (this.isValidImageUrl(url)) {
+        return url;
+      }
+    }
+
+    return null;
+  }
+
+  private isValidImageUrl(url: string): boolean {
     try {
       const parsed = new URL(url);
-      const validHosts = ['github.com', 'githubusercontent.com'];
+      const validHosts = ['raw.githubusercontent.com', 'githubusercontent.com', 'github.com'];
       if (!validHosts.includes(parsed.hostname)) {
         return false;
       }
       if (!['http:', 'https:'].includes(parsed.protocol)) {
+        return false;
+      }
+      // 跳过 GitHub Actions 相关的图片（badge、workflow 等）
+      const path = parsed.pathname.toLowerCase();
+      if (path.includes('badge') || path.includes('workflow') || path.includes('/actions/')) {
         return false;
       }
       return true;
@@ -142,9 +212,13 @@ export class GithubFetcherService {
     const existing = await this.toolRepo.findOne({ where: { fullName: tool.fullName } });
     if (existing) return;
 
-    // 抓取 favicon
+    // 从 README 提取标题和图标
     const parts = tool.fullName.split('/');
-    tool.avatarUrl = await this.fetchFavicon(parts[0], parts[1]);
+    const { title, logoUrl } = await this.fetchReadmeInfo(parts[0], parts[1]);
+
+    // 使用 README 中的标题（如果从描述中提取的名称不同）
+    tool.name = title;
+    tool.avatarUrl = logoUrl;
 
     const saved = await this.toolRepo.save(tool);
 

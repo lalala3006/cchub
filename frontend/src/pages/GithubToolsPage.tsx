@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Spin, message, Button } from 'antd';
-import { ReloadOutlined } from '@ant-design/icons';
+import { ReloadOutlined, SettingOutlined } from '@ant-design/icons';
 import type { GithubTool, CollectionRecord, CollectionStatus } from '../api/githubToolsApi';
 import { githubToolsApi } from '../api/githubToolsApi';
 import { ToolCard } from '../components/GithubTools/ToolCard';
+import { ConfigModal } from '../components/GithubTools/ConfigModal';
 import styles from '../components/GithubTools/GithubToolsPage.module.css';
 
 const TABS: { key: CollectionStatus; label: string }[] = [
@@ -19,6 +20,7 @@ export function GithubToolsPage() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
+  const [configModalOpen, setConfigModalOpen] = useState(false);
 
   useEffect(() => {
     loadFeed();
@@ -104,6 +106,14 @@ export function GithubToolsPage() {
           <h1 className={styles.title}>GitHub 工具</h1>
           <p className={styles.subtitle}>发现和追踪有价值的开源项目</p>
         </div>
+        <div className={styles.headerRight}>
+          <Button
+            icon={<SettingOutlined />}
+            onClick={() => setConfigModalOpen(true)}
+          >
+            管理关注领域
+          </Button>
+        </div>
       </div>
 
       <div className={styles.tabs}>
@@ -172,6 +182,7 @@ export function GithubToolsPage() {
           )}
         </div>
       </Spin>
+      <ConfigModal open={configModalOpen} onClose={() => setConfigModalOpen(false)} />
     </div>
   );
 }
